@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ganzkörper Trainingsplan</title>
-<meta name="description" content="Ganzkörper-Trainingsplan nach Trainingstagen, Größe, Alter und Gewicht – alle Daten bleiben lokal.">
+<title>Trainingsplan</title>
+<meta name="description" content="Trainingsplan (Ganzkörper oder Split) nach Trainingstagen, Größe, Alter und Gewicht – alle Daten bleiben lokal.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,6 +13,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<script>
+try{var t=(JSON.parse(localStorage.getItem('ganzkoerper-plan-v1')||'{}')||{}).theme;if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}
+</script>
 <style>
 :root{
   --bg:#f4f5f2; --card:#ffffff; --card2:#f0f2ee; --text:#1b1f1d; --muted:#626b66; --line:#dfe3de;
@@ -21,13 +24,22 @@
   --radius:14px; --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
 }
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#0f1211; --card:#191d1b; --card2:#212624; --text:#e8ece9; --muted:#9aa49f; --line:#2c322f;
     --accent:#2bb3a6; --accent-ink:#04201d; --accent-soft:#163a36; --warn:#f0b35a; --warn-soft:#3a2c14;
     --danger:#f2775f; --ok:#4ade80; --light:#8ea2f2; --light-soft:#232b4a;
     --shadow:none;
   }
 }
+:root[data-theme="dark"]{
+  --bg:#0f1211; --card:#191d1b; --card2:#212624; --text:#e8ece9; --muted:#9aa49f; --line:#2c322f;
+  --accent:#2bb3a6; --accent-ink:#04201d; --accent-soft:#163a36; --warn:#f0b35a; --warn-soft:#3a2c14;
+  --danger:#f2775f; --ok:#4ade80; --light:#8ea2f2; --light-soft:#232b4a;
+  --shadow:none; color-scheme:dark;
+}
+:root[data-theme="light"]{color-scheme:light}
+:root{color-scheme:light dark}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);
@@ -114,7 +126,7 @@ textarea{width:100%;min-height:120px;font:13px/1.4 ui-monospace,Menlo,monospace;
 <body>
 <header class="top">
   <h1 id="title">Trainingsplan</h1>
-  <p id="subtitle">Ganzkörper · Fitnessstudio</p>
+  <p id="subtitle">Fitnessstudio</p>
 </header>
 <main id="app"></main>
 <nav class="tabs" id="tabs"></nav>
@@ -135,7 +147,8 @@ const PATTERNS = {
   vpush:{n:'Drücken vertikal',m:'Schultern',upper:true},
   hpull:{n:'Ziehen horizontal',m:'Rücken',upper:true},
   vpull:{n:'Ziehen vertikal',m:'Rücken',upper:true},
-  shoulder:{n:'Schulter',m:'Schultern',upper:true},
+  side:{n:'Seitliche Schulter',m:'Schultern',upper:true},
+  rear:{n:'Hintere Schulter',m:'Schultern',upper:true},
   biceps:{n:'Bizeps',m:'Arme',upper:true},
   triceps:{n:'Trizeps',m:'Arme',upper:true},
   calf:{n:'Waden',m:'Waden',upper:false},
@@ -184,13 +197,20 @@ const EXERCISES = [
   E('vpl_lat','Latziehen breit','vpull',1,[0,0,0],.4,'cable',{tip:'Stange zur oberen Brust, nicht hinter den Kopf.'}),
   E('vpl_assist','Assistierte Klimmzüge (Maschine)','vpull',1,[0,0,1],null,'assist',{tip:'Unterstützung so wählen, dass die Zielwiederholungen sauber gehen.'}),
   E('vpl_neutral','Latziehen enger Neutralgriff','vpull',1,[0,0,0],.4,'cable',{tip:'Ellbogen nach unten zur Hüfte ziehen.'}),
-  E('sh_lateral','Seitheben (Kurzhanteln)','shoulder',1,[0,0,1],.04,'db',{tip:'Leicht gebeugte Arme, bis Schulterhöhe.'}),
-  E('sh_facepull','Face Pulls (Kabel)','shoulder',1,[0,0,0],.12,'cable',{tip:'Seil zur Stirn, Daumen nach hinten – gut für die Schultergesundheit.'}),
-  E('sh_reverse','Reverse Flys (Maschine)','shoulder',1,[0,0,0],.12,'machine',{tip:'Hintere Schulter, langsam und kontrolliert.'}),
+  E('hp_butterfly','Butterfly (Maschine)','hpush',1,[0,0,0],.2,'machine',{iso:true,tip:'Ellbogen leicht gebeugt, vorne kurz zusammendrücken.'}),
+  E('sh_lateral','Seitheben (Kurzhanteln)','side',1,[0,0,1],.04,'db',{tip:'Leicht gebeugte Arme, bis Schulterhöhe.'}),
+  E('sh_cablelat','Seitheben am Kabel','side',1,[0,0,1],.03,'cable',{side:true,tip:'Gleichmäßige Spannung, langsam ablassen.'}),
+  E('sh_machinelat','Seitheben-Maschine','side',1,[0,0,0],.1,'machine',{tip:'Ellbogen führen, Schultern unten lassen.'}),
+  E('sh_facepull','Face Pulls (Kabel)','rear',1,[0,0,0],.12,'cable',{tip:'Seil zur Stirn, Daumen nach hinten – gut für die Schultergesundheit.'}),
+  E('sh_reverse','Reverse Flys (Maschine)','rear',1,[0,0,0],.12,'machine',{tip:'Hintere Schulter, langsam und kontrolliert.'}),
   E('bi_db','Kurzhantel-Curls','biceps',1,[0,0,0],.06,'db',{tip:'Ellbogen bleiben am Körper.'}),
   E('bi_cable','Bizeps-Curls am Kabel','biceps',1,[0,0,0],.12,'cable',{tip:'Ohne Schwung, unten ganz strecken.'}),
+  E('bi_hammer','Hammer-Curls (Kurzhanteln)','biceps',1,[0,0,0],.07,'db',{tip:'Daumen zeigen nach oben, kontrolliert ablassen.'}),
+  E('bi_ez','SZ-Curls','biceps',1,[0,0,0],.15,'ez',{tip:'Aufrecht stehen, kein Schwung aus dem Rücken.'}),
   E('tr_push','Trizepsdrücken am Kabel','triceps',1,[0,0,0],.15,'cable',{tip:'Oberarme fixiert, unten ganz strecken.'}),
   E('tr_over','Überkopf-Trizepsstrecken (Kabel)','triceps',1,[0,0,1],.12,'cable',{tip:'Ellbogen zeigen nach vorne.'}),
+  E('tr_skull','SZ-Stirndrücken','triceps',2,[0,0,1],.12,'ez',{tip:'Stange Richtung Stirn absenken, Ellbogen bleiben eng.'}),
+  E('tr_dipm','Dip-Maschine','triceps',1,[0,0,1],.3,'machine',{tip:'Oberkörper aufrecht, unten ganz strecken.'}),
   E('ca_stand','Wadenheben stehend (Maschine)','calf',1,[0,1,0],.5,'machine',{tip:'Unten dehnen, oben 1 s halten.'}),
   E('ca_seat','Wadenheben sitzend','calf',1,[0,0,0],.3,'machine',{tip:'Langsame Wiederholungen.'}),
   E('co_plank','Unterarmstütz (Plank)','core',1,[0,0,0],null,'time',{time:'30–45 s',tip:'Gesäß und Bauch fest, Körper in einer Linie.'}),
@@ -198,7 +218,9 @@ const EXERCISES = [
   E('co_deadbug','Dead Bug','core',1,[0,0,0],null,'bw',{side:true,tip:'Unterer Rücken bleibt am Boden.'}),
   E('co_crunch','Kabel-Crunch','core',2,[0,1,0],.3,'cable',{tip:'Rippen Richtung Becken einrollen.'}),
   E('co_hang','Hängendes Knieheben','core',2,[0,0,1],null,'bw',{tip:'Ohne Schwung, Becken einrollen.'}),
-  E('co_farmer','Farmer’s Walk (Kurzhanteln)','core',1,[0,1,0],.25,'db',{time:'30–40 m',tip:'Aufrecht gehen, Schultern unten.'})
+  E('co_farmer','Farmer’s Walk (Kurzhanteln)','core',1,[0,1,0],.25,'db',{time:'30–40 m',tip:'Aufrecht gehen, Schultern unten.'}),
+  E('co_rollout','Ab-Wheel Rollout','core',2,[0,1,1],null,'bw',{tip:'Nur so weit rollen, wie der Rücken gerade bleibt.'}),
+  E('co_side','Seitstütz','core',1,[0,0,1],null,'time',{time:'20–40 s je Seite',tip:'Hüfte hoch, Körper in einer Linie.'})
 ];
 const EX = Object.fromEntries(EXERCISES.map(e=>[e.id,e]));
 
@@ -258,67 +280,111 @@ function candidates(pattern, ctx){
   return EXERCISES.filter(e=>e.p===pattern && !(e.lv>ctx.L+1) && !(ctx.L===1 && e.lv===3))
     .map(e=>({e,s:scoreEx(e,ctx,null,()=>.5,true)})).sort((x,y)=>y.s-x.s).map(x=>x.e);
 }
-function pick(pattern, ctx, used, rng, heavyMain, main){
-  const list = EXERCISES.filter(e=>e.p===pattern && !(main && e.iso));
+function pick(pattern, ctx, used, rng, heavyMain, main, exclude){
+  const list = EXERCISES.filter(e=>e.p===pattern && !(main && e.iso) && !(exclude && exclude.has(e.id)));
+  if(!list.length) return null;
   let best=null,bs=-1e9;
   for(const e of list){ const s=scoreEx(e,ctx,used[pattern],rng,heavyMain); if(s>bs){bs=s;best=e;} }
   (used[pattern] ||= new Set()).add(best.id);
   return best;
 }
 
-function intensityPlan(schedule){
-  const on = DAYS.map(d=>!!(schedule[d.k]&&schedule[d.k].on));
+// ---- Splits: welche Körperpartien an welchem Tag ----
+const SPLITS = {
+  ganz:{n:'Ganzkörper', seq:['ganzA','ganzB','ganzC'], min:1,
+    d:'Jede Einheit trainiert den ganzen Körper. Ideal bei 1–3 Tagen pro Woche.'},
+  ou:{n:'Oberkörper / Unterkörper', seq:['oberA','unterA','oberB','unterB'], min:2,
+    d:'Abwechselnd Oberkörper (Brust, Rücken, Schultern, Arme) und Unterkörper (Beine, Gesäß, Waden, Rumpf). Ideal bei 4–5 Tagen.'},
+  ppl:{n:'Push / Pull / Beine', seq:['push','pull','beine'], min:3,
+    d:'Push: Brust, Schultern, Trizeps · Pull: Rücken, hintere Schulter, Bizeps · Beine: Beine, Gesäß, Waden. Ideal bei 6 Tagen (bei 3 Tagen jede Partie einmal).'},
+  vier:{n:'4er-Split', seq:['brust','beine','ruecken','schulter'], min:4,
+    d:'Brust & Trizeps · Beine · Rücken & Bizeps · Schultern & Rumpf. Mehr Übungen pro Partie, dafür seltener. Ab 4 Tagen.'}
+};
+function recommendSplit(n){ return n<=3 ? 'ganz' : n<=5 ? 'ou' : 'ppl'; }
+function resolveSplit(p, n){ return (p.split && SPLITS[p.split]) ? p.split : recommendSplit(n); }
+
+const S = (id,p,main) => ({id,p,main:!!main});
+function gkSlots(v){
+  const knee = v===2 ? 'lunge' : 'squat';
+  const hip  = v%2===0 ? 'hinge' : 'glute';
+  const push = v%2===0 ? 'hpush' : 'vpush';
+  const pull = v%2===0 ? 'vpull' : 'hpull';
+  const other = {hpush:'vpush',vpush:'hpush',hpull:'vpull',vpull:'hpull',hinge:'glute',glute:'hinge'};
+  const arms = v%2===0 ? ['triceps','biceps'] : ['biceps','triceps'];
+  // Reihenfolge = Priorität beim Auffüllen der verfügbaren Zeit
+  return [S('knee',knee,1),S('push',push,1),S('hip',hip,1),S('pull',pull,1),S('core','core'),
+    S('push2',other[push]),S('pull2',other[pull]),S('leg2',knee==='squat'?'lunge':'squat'),
+    S('shoulder',v%2===0?'rear':'side'),S('arm1',arms[0]),S('hip2',other[hip]),S('calf','calf'),S('arm2',arms[1])];
+}
+const DAY_TYPES = {
+  ganzA:{n:'Ganzkörper A', slots:()=>gkSlots(0)},
+  ganzB:{n:'Ganzkörper B', slots:()=>gkSlots(1)},
+  ganzC:{n:'Ganzkörper C', slots:()=>gkSlots(2)},
+  oberA:{n:'Oberkörper A', slots:()=>[S('push','hpush',1),S('pull','vpull',1),S('push2','vpush'),S('pull2','hpull'),S('side','side'),S('rear','rear'),S('tri','triceps'),S('bi','biceps'),S('core','core')]},
+  oberB:{n:'Oberkörper B', slots:()=>[S('push','vpush',1),S('pull','hpull',1),S('push2','hpush'),S('pull2','vpull'),S('rear','rear'),S('side','side'),S('bi','biceps'),S('tri','triceps'),S('core','core')]},
+  unterA:{n:'Unterkörper A', slots:()=>[S('knee','squat',1),S('hip','hinge',1),S('leg2','lunge'),S('hip2','glute'),S('calf','calf'),S('core','core'),S('core2','core')]},
+  unterB:{n:'Unterkörper B', slots:()=>[S('hip','hinge',1),S('knee','squat',1),S('hip2','glute'),S('leg2','lunge'),S('calf','calf'),S('core','core'),S('core2','core')]},
+  push:{n:'Push', slots:()=>[S('push','hpush',1),S('push2','vpush',1),S('push3','hpush'),S('side','side'),S('tri','triceps'),S('tri2','triceps'),S('side2','side')]},
+  pull:{n:'Pull', slots:()=>[S('pull','vpull',1),S('pull2','hpull',1),S('pull3','hpull'),S('rear','rear'),S('bi','biceps'),S('bi2','biceps'),S('core','core')]},
+  beine:{n:'Beine', slots:()=>[S('knee','squat',1),S('hip','hinge',1),S('leg2','lunge'),S('hip2','glute'),S('calf','calf'),S('core','core'),S('leg3','squat')]},
+  brust:{n:'Brust & Trizeps', slots:()=>[S('push','hpush',1),S('push2','hpush'),S('push3','vpush'),S('tri','triceps'),S('tri2','triceps'),S('push4','hpush')]},
+  ruecken:{n:'Rücken & Bizeps', slots:()=>[S('pull','vpull',1),S('pull2','hpull',1),S('pull3','hpull'),S('rear','rear'),S('bi','biceps'),S('bi2','biceps'),S('pull4','vpull')]},
+  schulter:{n:'Schultern & Rumpf', slots:()=>[S('push','vpush',1),S('side','side'),S('rear','rear'),S('push2','vpush'),S('side2','side'),S('core','core'),S('core2','core'),S('core3','core')]}
+};
+const MAJOR = ['Beine (vorne)','Hintere Kette','Brust','Rücken','Schultern'];
+function partsOf(slots){ const s=new Set(slots.map(x=>PATTERNS[x.p].m)); return MUSCLE_ORDER.filter(m=>s.has(m)); }
+function assignDays(schedule, split){
+  const days = DAYS.map((d,i)=>({...d,i,...(schedule[d.k]||{})})).filter(d=>d.on);
+  const seq = SPLITS[split].seq;
+  return days.map((d,idx)=>({...d, type: seq[idx % seq.length]}));
+}
+
+// Leichter Tag nur, wenn am Vortag trainiert wurde UND sich die großen Muskelgruppen überschneiden
+function intensityPlan(on, parts){
   const light = new Array(7).fill(false);
   let start = on.findIndex((x,i)=>!x && on[(i+1)%7]);
   start = start<0 ? 0 : (start+1)%7;
   for(let j=1;j<7;j++){
     const i=(start+j)%7, prev=(i+6)%7;
-    if(on[i] && on[prev] && !light[prev]) light[i]=true;
+    if(!on[i] || !on[prev] || light[prev]) continue;
+    const overlap = MAJOR.filter(m=>parts[i].includes(m) && parts[prev].includes(m)).length;
+    if(overlap>=2) light[i]=true;
   }
   return light;
 }
 
 function generatePlan(state){
   const p = state.profile, sch = state.schedule;
-  const days = DAYS.map((d,i)=>({...d,i,...(sch[d.k]||{})})).filter(d=>d.on);
-  if(!profileValid(p) || !days.length) return null;
-  const ctx = analyze(p, days.length);
-  const G = GOALS[ctx.goal], L = ctx.L, n = days.length;
-  const rng = mulberry32(hashStr(JSON.stringify([p.height,p.weight,p.age,p.sex,p.level,p.goal,days.map(d=>d.k),state.seed||0])));
-  const light = intensityPlan(sch);
+  if(!profileValid(p)) return null;
+  const n0 = DAYS.filter(d=>sch[d.k]&&sch[d.k].on).length;
+  if(!n0) return null;
+  const split = resolveSplit(p, n0), SP = SPLITS[split];
+  const days = assignDays(sch, split), n = days.length;
+  const ctx = analyze(p, n);
+  const G = GOALS[ctx.goal], L = ctx.L;
+  const rng = mulberry32(hashStr(JSON.stringify([p.height,p.weight,p.age,p.sex,p.level,p.goal,split,days.map(d=>d.k),state.seed||0])));
+  const slotsOf = days.map(d=>DAY_TYPES[d.type].slots());
+  const partsByDay = new Array(7).fill(null);
+  days.forEach((d,idx)=>partsByDay[d.i]=partsOf(slotsOf[idx]));
+  const light = intensityPlan(DAYS.map((d,i)=>!!partsByDay[i]), partsByDay);
   const used = {};
   const volume = {}; MUSCLE_ORDER.forEach(m=>volume[m]=0);
-  const LETTERS='ABCDEFG';
-  const variants = n<=3 ? n : 3;
 
   const sessions = days.map((d,idx)=>{
-    const v = idx % variants;
     const isLight = light[d.i];
     const dur = Math.max(20, num(d.dur)||60);
-    const knee = (n>=3 && v===2) ? 'lunge' : 'squat';
-    const hip  = v%2===0 ? 'hinge' : 'glute';
-    const push = v%2===0 ? 'hpush' : 'vpush';
-    const pull = v%2===0 ? 'vpull' : 'hpull';
-    const other = {hpush:'vpush',vpush:'hpush',hpull:'vpull',vpull:'hpull',hinge:'glute',glute:'hinge'};
-    const arms = v%2===0 ? ['triceps','biceps'] : ['biceps','triceps'];
-    // Priorität: Hauptübungen zuerst, dann Rumpf, dann Ergänzungen
-    const slots = [
-      {id:'knee',p:knee,main:true},{id:'push',p:push,main:true},{id:'hip',p:hip,main:true},{id:'pull',p:pull,main:true},
-      {id:'core',p:'core'},
-      {id:'push2',p:other[push]},{id:'pull2',p:other[pull]},
-      {id:'leg2',p:knee==='squat'?'lunge':'squat'},
-      {id:'shoulder',p:'shoulder'},{id:'arm1',p:arms[0]},{id:'hip2',p:other[hip]},{id:'calf',p:'calf'},{id:'arm2',p:arms[1]}
-    ];
+    const slots = slotsOf[idx];
+    const dayIds = new Set();
     const short = dur<=30;
     const warm = short ? 5 : ctx.gentle ? 10 : 8, cool = short ? 3 : 5;
     const finisher = (ctx.goal==='abnehmen'||ctx.goal==='fitness') && dur>=60 ? 10 : 0;
     let budget = (dur - warm - cool - finisher)*60;
     const items = [];
     const exTime = it => it.sets*(40+it.rest) + 60;
-    for(const sl of slots){
+    slots.forEach((sl,si)=>{
       const par = sl.main ? G.main : G.acc;
       let sets = par.s[L-1];
-      if(sl.main && n<=2 && L>=2) sets += 1;
+      if(sl.main && split==='ganz' && n<=2 && L>=2) sets += 1;
       if(sl.main && isLight) sets = Math.max(2, sets-1);
       let r = sl.main ? par.r[L-1].slice() : par.r.slice();
       if(isLight && sl.main) r = [r[0]+2, r[1]+2];
@@ -326,33 +392,38 @@ function generatePlan(state){
       const swapKey = d.k+':'+sl.id;
       const sw = state.swaps && state.swaps[swapKey];
       let ex = (sw && EX[sw] && EX[sw].p===sl.p) ? EX[sw] : null;
-      const it = {slot:sl.id, key:swapKey, main:!!sl.main, pattern:sl.p, sets, reps:r, rest};
+      const it = {slot:sl.id, idx:si, key:swapKey, main:!!sl.main, pattern:sl.p, sets, reps:r, rest};
       const t = exTime(it);
-      if(!sl.main && t > budget) continue;
-      if(!ex) ex = pick(sl.p, ctx, used, rng, sl.main && !isLight, sl.main);
+      if(!sl.main && t > budget) return;
+      if(!ex) ex = pick(sl.p, ctx, used, rng, sl.main && !isLight, sl.main, dayIds);
       else (used[sl.p] ||= new Set()).add(ex.id);
+      if(!ex) return;
+      dayIds.add(ex.id);
       it.ex = ex.id;
       budget -= t;
       items.push(it);
-    }
-    // Zu wenig Zeit: Sätze der Hauptübungen reduzieren
+    });
+    // Zu wenig Zeit: Sätze reduzieren
     while(budget < 0){
       const it = items.filter(i=>i.sets>2).sort((a,b)=>b.sets-a.sets)[0];
       if(!it) break;
       it.sets--; budget += 40+it.rest;
     }
-    // Reihenfolge: Hauptübungen, Ergänzungen, Rumpf zum Schluss
-    const order = ['knee','push','hip','pull','leg2','push2','pull2','hip2','shoulder','arm1','arm2','calf','core'];
-    items.sort((a,b)=>order.indexOf(a.slot)-order.indexOf(b.slot));
+    // Anzeige: Hauptübungen, dann Ergänzungen, Rumpf zum Schluss
+    const rank = it => it.main ? 0 : it.pattern==='core' ? 2 : 1;
+    items.sort((a,b)=>rank(a)-rank(b) || a.idx-b.idx);
     for(const it of items){ volume[PATTERNS[it.pattern].m] += it.sets; it.rpe = isLight ? '6–7' : (L===1 ? '7' : '8'); }
     const est = Math.round(warm + cool + finisher + items.reduce((s,it)=>s+exTime(it),0)/60);
     return {
-      day:d.k, dayShort:d.s, dayLong:d.l, time:d.time||'', dur, label:'Ganzkörper '+LETTERS[v], light:isLight,
+      day:d.k, dayShort:d.s, dayLong:d.l, time:d.time||'', dur, type:d.type, label:DAY_TYPES[d.type].n,
+      parts: partsOf(items.map(i=>({p:i.pattern}))), light:isLight,
       warmup: warmupFor(ctx, isLight, warm), cooldown:['3–5 Min. locker ausradeln oder gehen','Dehnen: Hüftbeuger, Brust, Oberschenkel-Rückseite und Waden je 30 s'],
       finisher: finisher ? finisherFor(ctx,isLight) : null, items, est
     };
   });
-  return {ctx, sessions, volume, consecutive: sessions.some(s=>s.light)};
+  const splitHints = [];
+  if(n < SP.min) splitHints.push(['Aufteilung', `Mit ${n} Trainingstag${n>1?'en':''} wird beim Split „${SP.n}“ nicht jede Körperpartie jede Woche trainiert. Empfohlen: ${SPLITS[recommendSplit(n)].n}.`]);
+  return {ctx, split, sessions, volume, splitHints, consecutive: sessions.some(s=>s.light)};
 }
 
 function warmupFor(ctx, isLight, warm){
@@ -397,9 +468,9 @@ function repText(it){
 // ---------------- UI ----------------
 const KEY = 'ganzkoerper-plan-v1';
 const defaultState = () => ({
-  profile:{height:'',weight:'',age:'',sex:'',level:'anf',goal:'muskel'},
+  profile:{height:'',weight:'',age:'',sex:'',level:'anf',goal:'muskel',split:'auto'},
   schedule:Object.fromEntries(DAYS.map(d=>[d.k,{on:false,time:'18:00',dur:60}])),
-  seed:0, swaps:{}, logs:[], active:null, tab:'profil'
+  seed:0, swaps:{}, logs:[], active:null, tab:'profil', theme:'auto'
 });
 function load(){
   try{
@@ -422,15 +493,18 @@ const ICONS = {
   zeiten:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>',
   profil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>',
   log:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>',
-  daten:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>'
+  daten:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
 };
-const TABS = [['plan','Plan'],['zeiten','Zeiten'],['profil','Profil'],['log','Training'],['daten','Daten']];
+const TABS = [['plan','Plan'],['zeiten','Zeiten'],['profil','Profil'],['log','Training'],['daten','Optionen']];
 
 function render(){
   $('#tabs').innerHTML = TABS.map(([k,l])=>`<button data-action="tab" data-tab="${k}" class="${state.tab===k?'act':''}" aria-label="${l}">${ICONS[k]}<span>${l}</span></button>`).join('');
   const views = {plan:viewPlan, zeiten:viewZeiten, profil:viewProfil, log:viewLog, daten:viewDaten};
-  const titles = {plan:'Dein Wochenplan', zeiten:'Trainingszeiten', profil:'Profil', log:'Training', daten:'Daten'};
+  const titles = {plan:'Dein Wochenplan', zeiten:'Trainingszeiten', profil:'Profil', log:'Training', daten:'Einstellungen'};
   $('#title').textContent = titles[state.tab];
+  const nOn = DAYS.filter(d=>state.schedule[d.k].on).length;
+  $('#subtitle').textContent = (nOn ? SPLITS[resolveSplit(state.profile, nOn)].n + ' · ' : '') + 'Fitnessstudio';
+  applyTheme();
   $('#app').innerHTML = views[state.tab]();
 }
 
@@ -477,8 +551,22 @@ function viewZeiten(){
         <select data-sched="${d.k}" data-key="dur" aria-label="Dauer ${d.l}">${durs.map(m=>`<option value="${m}" ${+x.dur===m?'selected':''}>${m} Min.</option>`).join('')}</select>
       </div></div>`}).join('')}
   </div>
-  ${n ? `<p class="small muted">${n} ${n===1?'Tag':'Tage'} pro Woche ausgewählt.${n>=5?' Bei 5+ Tagen wechseln sich schwere und leichte Einheiten ab.':''}</p>
+  ${n ? `<p class="small muted">${n} ${n===1?'Tag':'Tage'} pro Woche ausgewählt.</p>${splitCard(n)}
     <button class="primary" style="width:100%" data-action="tab" data-tab="plan">Plan anzeigen</button>` : ''}`;
+}
+
+function splitCard(n){
+  const p = state.profile, rec = recommendSplit(n), cur = p.split && SPLITS[p.split] ? p.split : 'auto';
+  const active = resolveSplit(p, n), SP = SPLITS[active];
+  const opts = {auto:`Automatisch (${SPLITS[rec].n})`, ...Object.fromEntries(Object.entries(SPLITS).map(([k,v])=>[k,v.n]))};
+  const preview = assignDays(state.schedule, active);
+  return `<div class="card">
+    <h2>Aufteilung der Körperpartien</h2>
+    <div class="seg">${Object.entries(opts).map(([k,v])=>`<button data-action="set" data-field="split" data-value="${k}" class="${cur===k?'on':''}">${esc(v)}</button>`).join('')}</div>
+    <p class="small" style="margin:10px 0 6px">${esc(SP.d)}</p>
+    <div class="row wrap" style="gap:6px">${preview.map(d=>`<span class="pill">${d.s} · ${esc(DAY_TYPES[d.type].n)}</span>`).join('')}</div>
+    ${n < SP.min ? `<div class="hint"><b>Hinweis:</b> Mit ${n} ${n===1?'Tag':'Tagen'} wird bei diesem Split nicht jede Körperpartie jede Woche trainiert. Empfohlen: ${esc(SPLITS[rec].n)}.</div>` : ''}
+  </div>`;
 }
 
 function lastLogFor(exId){
@@ -522,10 +610,10 @@ function viewPlan(){
   const c = plan.ctx;
   const maxV = Math.max(1,...Object.values(plan.volume));
   const target = [[8,12],[10,16],[12,20]][c.L-1];
-  const hints = c.hints.slice();
+  const hints = c.hints.concat(plan.splitHints);
   if(plan.consecutive) hints.push(['Aufeinanderfolgende Tage','Nach einem Trainingstag folgt eine leichtere Einheit (weniger Sätze, mehr Wiederholungen, RPE 6–7), damit du dich erholen kannst.']);
   return `<div class="card">
-    <div class="row"><h2 style="margin:0">Übersicht</h2><span class="spacer"></span><span class="pill">${LEVELS[state.profile.level].n} · ${GOALS[c.goal].n}</span></div>
+    <div class="row wrap" style="gap:6px"><h2 style="margin:0">Übersicht</h2><span class="spacer"></span><span class="pill heavy">${esc(SPLITS[plan.split].n)}</span><span class="pill">${LEVELS[state.profile.level].n} · ${GOALS[c.goal].n}</span></div>
     <div class="stats" style="margin-top:12px">
       <div class="stat"><b>${fmt(c.bmi)}</b><span>BMI</span></div>
       <div class="stat"><b>${Math.round(c.kcal/50)*50}</b><span>kcal / Tag*</span></div>
@@ -536,8 +624,9 @@ function viewPlan(){
   </div>
   ${plan.sessions.map((s,si)=>`<details class="sess" ${si===0?'open':''}>
     <summary><div class="row"><div><div class="t">${s.dayLong}${s.time?` · ${esc(s.time)}`:''}</div>
-      <div class="small muted">${s.label} · ${s.items.length} Übungen · ca. ${s.est} von ${s.dur} Min.</div></div>
-      <span class="spacer"></span><span class="pill ${s.light?'light':'heavy'}">${s.light?'leicht':'normal'}</span></div></summary>
+      <div class="small"><b>${esc(s.label)}</b> <span class="muted">· ${s.items.length} Übungen · ca. ${s.est} von ${s.dur} Min.</span></div></div>
+      <span class="spacer"></span><span class="pill ${s.light?'light':'heavy'}">${s.light?'leicht':'normal'}</span></div>
+      <div class="chips">${s.parts.map(m=>`<span class="pill">${esc(m)}</span>`).join('')}</div></summary>
     <div class="body">
       <h3>Aufwärmen</h3><ul class="plain">${s.warmup.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>
       <h3>Training</h3>
@@ -609,8 +698,19 @@ function viewLog(){
   return html;
 }
 
+function applyTheme(){
+  const t = state.theme==='light'||state.theme==='dark' ? state.theme : null;
+  if(t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+  const dark = t ? t==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const m = document.querySelector('meta[name=theme-color]'); if(m) m.setAttribute('content', dark ? '#0f1211' : '#f4f5f2');
+}
 function viewDaten(){
-  return `<div class="card"><h2>Sicherung</h2>
+  const th = state.theme||'auto';
+  return `<div class="card"><h2>Darstellung</h2>
+    <div class="seg">${[['auto','Automatisch'],['light','Hell'],['dark','Dunkel']].map(([k,l])=>`<button data-action="theme" data-value="${k}" class="${th===k?'on':''}">${l}</button>`).join('')}</div>
+    <p class="small muted" style="margin:8px 0 0">„Automatisch“ folgt der Einstellung deines iPhones (Einstellungen → Anzeige &amp; Helligkeit).</p>
+  </div>
+  <div class="card"><h2>Sicherung</h2>
     <p class="small muted">Alle Daten liegen nur auf diesem Gerät im Browser-Speicher. Wenn du die Safari-Websitedaten löschst, sind sie weg. Exportiere deshalb ab und zu eine Sicherung.</p>
     <div class="row wrap"><button class="primary" data-action="export" style="flex:1">Sicherung exportieren</button>
     <button data-action="copy" style="flex:1">In Zwischenablage</button></div>
@@ -623,7 +723,7 @@ function viewDaten(){
   <div class="card"><h2>Zurücksetzen</h2>
     <p class="small muted">Löscht Profil, Zeiten und Trainingsverlauf.</p>
     <button class="danger" data-action="reset" style="width:100%">Alle Daten löschen</button></div>
-  <p class="disclaimer">Ganzkörper Trainingsplan · funktioniert offline · keine Daten verlassen dein Gerät.</p>`;
+  <p class="disclaimer">Trainingsplan · funktioniert offline · keine Daten verlassen dein Gerät.</p>`;
 }
 
 function exportData(){ const o={...state}; delete o.tab; return JSON.stringify(o,null,1); }
@@ -642,6 +742,7 @@ document.addEventListener('click', e=>{
   const A = b.dataset.action;
   if(A==='tab'){ state.tab=b.dataset.tab; window.scrollTo(0,0); }
   else if(A==='set'){ state.profile[b.dataset.field]=b.dataset.value; }
+  else if(A==='theme'){ state.theme=b.dataset.value; }
   else if(A==='day'){ const x=state.schedule[b.dataset.day]; x.on=!x.on; }
   else if(A==='regen'){ state.seed=(state.seed||0)+1; state.swaps={}; toast('Neue Übungsauswahl'); }
   else if(A==='swap'){
@@ -693,6 +794,7 @@ document.addEventListener('change', e=>{
 
 if(state.tab==='profil' && profileValid(state.profile) && DAYS.some(d=>state.schedule[d.k].on)) state.tab='plan';
 render();
+try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); }catch(e){}
 
 if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
