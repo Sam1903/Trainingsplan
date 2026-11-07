@@ -208,7 +208,6 @@ ol.plain{margin:4px 0 0;padding-left:20px} ol.plain li{margin:3px 0;font-size:14
 <dialog id="sheet"><div id="sheetBody"></div></dialog>
 <div class="toast" id="toast"></div>
 
-<script src="html5-qrcode.min.js" defer></script>
 <script>
 /*LOGIC-START*/
 const DAYS = [
@@ -1100,7 +1099,8 @@ function sheetAdd(){
       <div id="fres">${searchResultsHtml()}</div>
       <p class="small muted" style="margin-top:8px">Daten von Open Food Facts (offene Datenbank). Es wird nur der Suchbegriff übertragen.</p>`;
   } else if(m==='scan'){
-    body = `<div id="reader" class="reader"></div><p class="small muted" id="scanInfo">Halte den Barcode der Verpackung in den Rahmen. Beim ersten Mal fragt das iPhone nach der Kamera-Erlaubnis.</p>`;
+    body = `<div id="reader" class="reader"></div><p class="small muted" id="scanInfo">Kamera wird gestartet … Beim ersten Mal fragt das iPhone nach der Kamera-Erlaubnis.</p>
+      <div class="row" style="margin-top:6px"><input id="ean" inputmode="numeric" pattern="[0-9]*" placeholder="Oder Barcode-Nummer eintippen" enterkeyhint="search"><button data-action="eanLookup">Suchen</button></div>`;
   } else {
     const q = s.quick || {};
     body = `<label class="f"><span>Bezeichnung</span><input id="qn" value="${esc(q.name||'')}" placeholder="z. B. Mittagessen Kantine"></label>
@@ -1139,6 +1139,7 @@ async function doSearch(){
 }
 async function lookupBarcode(code){
   const info = $('#scanInfo'); if(info) info.textContent = 'Barcode '+code+' erkannt – suche Produkt …';
+  if(!navigator.onLine){ toast('Offline – Produktdaten gibt es nur mit Internet'); openSheet('add', {mode:'quick', quick:{code}}); return; }
   try{
     const r = await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=code,product_name,product_name_de,brands,nutriments,serving_quantity');
     const j = r.ok ? await r.json() : null;
@@ -1147,23 +1148,51 @@ async function lookupBarcode(code){
   }catch(e){}
   openSheet('add', {mode:'quick', quick:{code}});
 }
+let scanLibPromise = null;
+function loadScanLib(){
+  if(window.Html5Qrcode) return Promise.resolve();
+  if(!scanLibPromise) scanLibPromise = new Promise((res, rej)=>{
+    const el = document.createElement('script'); el.src = 'html5-qrcode.min.js';
+    el.onload = ()=> window.Html5Qrcode ? res() : (scanLibPromise=null, rej(new Error('lib')));
+    el.onerror = ()=>{ scanLibPromise = null; el.remove(); rej(new Error('load')); };
+    document.head.appendChild(el);
+  });
+  return scanLibPromise;
+}
+function scanMsg(html){ const i = document.getElementById('scanInfo'); if(i) i.innerHTML = html; }
+function scanErrText(e){
+  const m = String((e && (e.name+' '+e.message)) || e || '');
+  if(/NotAllowed|Permission|denied/i.test(m)) return 'Kein Zugriff auf die Kamera. Erlaube ihn unter <b>Einstellungen → Safari → Kamera</b> (bzw. beim nächsten Nachfragen „Erlauben“) und öffne den Scanner erneut.';
+  if(/NotFound|DevicesNotFound|no camera/i.test(m)) return 'Keine Kamera gefunden.';
+  if(/NotReadable|TrackStart|in use/i.test(m)) return 'Die Kamera wird gerade von einer anderen App benutzt. Schließe sie und versuche es erneut.';
+  if(/secure|https|insecure/i.test(m)) return 'Die Kamera funktioniert nur, wenn die App über https:// geöffnet wird (z. B. GitHub Pages).';
+  return 'Kamera konnte nicht gestartet werden ('+esc(m.slice(0,80))+').';
+}
 async function startScanner(){
-  const el = document.getElementById('reader'); if(!el || ui.scanner) return;
-  if(!window.Html5Qrcode){ $('#scanInfo').textContent='Scanner konnte nicht geladen werden.'; return; }
+  if(!document.getElementById('reader') || ui.scanner || ui.scanStarting) return;
+  ui.scanStarting = true;
   try{
+    if(!window.isSecureContext){ scanMsg(scanErrText('secure')); return; }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ scanMsg('Dieser Browser erlaubt keinen Kamerazugriff. Tippe die Barcode-Nummer unten ein.'); return; }
+    try{ await loadScanLib(); }
+    catch(e){ scanMsg('Der Scanner konnte nicht geladen werden. Öffne die App einmal mit Internetverbindung und versuche es erneut – oder tippe die Barcode-Nummer unten ein.'); return; }
+    if(!document.getElementById('reader')) return;          // Fenster inzwischen geschlossen
     const F = window.Html5QrcodeSupportedFormats;
-    const sc = new Html5Qrcode('reader', {formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E], verbose:false});
+    const sc = new window.Html5Qrcode('reader', {formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E], verbose:false});
     ui.scanner = sc;
-    await sc.start({facingMode:'environment'}, {fps:10, qrbox:(w,h)=>({width:Math.min(280,w*0.85), height:Math.min(140,h*0.5)})},
-      text=>{ if(ui.scanBusy) return; ui.scanBusy=true; stopScanner().then(()=>lookupBarcode(text)); }, ()=>{});
+    await sc.start({facingMode:'environment'},
+      {fps:10, qrbox:(w,h)=>({width:Math.max(60,Math.floor(Math.min(300,w*0.9))), height:Math.max(60,Math.floor(Math.min(160,h*0.6)))})},
+      text=>{ if(ui.scanBusy) return; ui.scanBusy = true; stopScanner().then(()=>lookupBarcode(text)); }, ()=>{});
+    scanMsg('Halte den Barcode der Verpackung ruhig in den Rahmen (ca. 10–20 cm Abstand, gutes Licht).');
+    if(!document.getElementById('reader') || !ui.sheet || ui.sheet.mode!=='scan') stopScanner();
   }catch(e){
     ui.scanner = null;
-    const i=$('#scanInfo'); if(i) i.innerHTML = 'Kamera nicht verfügbar. Prüfe die Kamera-Erlaubnis (iPhone: Einstellungen → Safari → Kamera) oder nutze „Suchen“.';
-  }
+    scanMsg(scanErrText(e));
+  }finally{ ui.scanStarting = false; }
 }
 async function stopScanner(){
   const sc = ui.scanner; ui.scanner = null;
-  if(sc){ try{ await sc.stop(); }catch(e){} try{ sc.clear(); }catch(e){} }
+  if(sc){ try{ if(sc.isScanning) await sc.stop(); }catch(e){} try{ sc.clear(); }catch(e){} }
   setTimeout(()=>{ ui.scanBusy=false; }, 500);
 }
 function sheetAmount(){
@@ -1399,6 +1428,7 @@ document.addEventListener('click', e=>{
     case 'setMeal': ui.addMeal = b.dataset.meal; document.querySelectorAll('[data-action=setMeal]').forEach(x=>x.classList.toggle('on', x.dataset.meal===ui.addMeal)); return;
     case 'closeSheet': closeSheet(); return;
     case 'doSearch': doSearch(); return;
+    case 'eanLookup': { const c=(($('#ean')||{}).value||'').replace(/\D/g,''); if(c.length<8){ toast('Bitte die 8- oder 13-stellige Nummer unter dem Barcode eingeben'); return; } stopScanner().then(()=>lookupBarcode(c)); return; }
     case 'pickSearch': openSheet('amount', {food:ui.search[+b.dataset.i], g:ui.search[+b.dataset.i].serving||100}); return;
     case 'amtSet': { const inp=$('#amt'); inp.value=b.dataset.g; inp.dispatchEvent(new Event('input',{bubbles:true})); return; }
     case 'amountSave': {
@@ -1461,7 +1491,7 @@ document.addEventListener('input', e=>{
   }
   else if(t.id==='libQ'){ ui.libQ = t.value; $('#libList').innerHTML = libList(); }
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='fq'){ e.preventDefault(); doSearch(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='fq'){ e.preventDefault(); doSearch(); } if(e.key==='Enter' && e.target.id==='ean'){ e.preventDefault(); $('[data-action=eanLookup]').click(); } });
 document.addEventListener('change', e=>{
   const t = e.target;
   if(t.dataset.sched){ state.schedule[t.dataset.sched][t.dataset.key] = t.dataset.key==='dur' ? +t.value : t.value; save(); }
