@@ -238,7 +238,6 @@ ol.plain{margin:4px 0 0;padding-left:20px} ol.plain li{margin:3px 0;font-size:14
 <dialog id="sheet"><div id="sheetBody"></div></dialog>
 <div class="toast" id="toast"></div>
 
-<script src="push-config.js"></script>
 <script>
 /*LOGIC-START*/
 const DAYS = [
@@ -849,6 +848,54 @@ function applyCustom(plan, state){
   return plan;
 }
 function getPlan(state){ return applyCustom(generatePlan(state), state); }
+
+const PF_CAT = {"Skyr natur": "milch", "Magerquark": "milch", "Körniger Frischkäse": "milch", "Griechischer Joghurt 2 %": "milch", "Proteinpudding": "snack", "Milch 1,5 %": "milch", "Hähnchenbrust (gegart)": "fleisch", "Putenbrust (gegart)": "fleisch", "Rinderhack 5 % Fett": "fleisch", "Puten-/Hähnchenaufschnitt": "fleisch", "Thunfisch im eigenen Saft": "fisch", "Lachs": "fisch", "Kabeljau": "fisch", "Garnelen": "fisch", "Eier (ca. 2 Stück)": "ei", "Eiklar": "ei", "Harzer Käse": "ei", "Linsen (gekocht)": "pflanze", "Kichererbsen (gekocht)": "pflanze", "Kidneybohnen (gekocht)": "pflanze", "Tofu natur": "pflanze", "Tempeh": "pflanze", "Seitan": "pflanze", "Edamame": "pflanze", "Whey-Proteinpulver": "snack", "Proteinriegel": "snack", "Erdnussmus": "snack"};
+// ---- Protein-Hilfe: eiweißreiche Lebensmittel (Durchschnittswerte pro 100 g, typische Portion g) ----
+const PF = (name, kcal, p, c, f, g) => ({name, per100:{kcal, p, c, f}, g, cat:PF_CAT[name]||'x'});
+const PROTEIN_FOODS = [
+  PF('Skyr natur',63,11,4,0.2,250), PF('Magerquark',67,12,4,0.3,250), PF('Körniger Frischkäse',98,12.5,2.5,4.3,200),
+  PF('Griechischer Joghurt 2 %',73,10,3,2,200), PF('Proteinpudding',75,10,5,1.5,200), PF('Milch 1,5 %',47,3.4,4.9,1.5,300),
+  PF('Hähnchenbrust (gegart)',165,31,0,3.6,150), PF('Putenbrust (gegart)',135,30,0,1.5,150), PF('Rinderhack 5 % Fett',125,21,0,5,125),
+  PF('Puten-/Hähnchenaufschnitt',100,20,1,1.5,80), PF('Thunfisch im eigenen Saft',116,26,0,1,130), PF('Lachs',208,20,0,13,125),
+  PF('Kabeljau',82,18,0,0.7,150), PF('Garnelen',99,24,0.2,0.3,150), PF('Eier (ca. 2 Stück)',155,13,1.1,11,120),
+  PF('Eiklar',52,11,0.7,0.2,150), PF('Harzer Käse',112,27,0,0.5,100), PF('Linsen (gekocht)',116,9,20,0.4,200),
+  PF('Kichererbsen (gekocht)',164,8.9,27.4,2.6,200), PF('Kidneybohnen (gekocht)',127,8.7,22.8,0.5,200), PF('Tofu natur',120,13,2,7,200),
+  PF('Tempeh',192,19,9,11,100), PF('Seitan',135,25,4,2,100), PF('Edamame',121,12,9,5,150),
+  PF('Whey-Proteinpulver',380,75,7,6,30), PF('Proteinriegel',360,33,30,12,60), PF('Erdnussmus',600,25,12,50,30)
+];
+function proteinSuggestions(missingP, kcalLeft, own, n){
+  n = n || 6; missingP = +missingP; if(!(missingP > 0)) return [];
+  const limit = Math.max(200, (+kcalLeft||0) + 150);
+  const build = (src, isOwn) => {
+    let v, g = null;
+    if(src.per100 && src.per100.p > 0){
+      const base = +src.g || 100, step = base <= 40 ? 5 : 10;
+      let amt = Math.min(Math.max(missingP / src.per100.p * 100, base*0.5), base*1.5);
+      if(src.per100.kcal > 0) amt = Math.min(amt, limit / src.per100.kcal * 100);   // nicht übers Kalorienbudget
+      amt = Math.max(step, Math.floor(amt/step)*step);
+      g = amt; v = scaleFood(src.per100, amt);
+    } else if(+src.p > 0){ v = {kcal:+src.kcal||0, p:+src.p, c:+src.c||0, f:+src.f||0}; }
+    else return null;
+    if(v.p < 8 || v.kcal > limit) return null;
+    const density = v.kcal > 0 ? v.p / v.kcal * 100 : v.p;           // g Protein pro 100 kcal
+    const cover = v.p / missingP;
+    const score = density * (isOwn ? 1.25 : 1) + (cover >= 0.5 && cover <= 1.1 ? 3 : 0);
+    return {name:src.name, g, ...v, per100:src.per100 || null, own:isOwn, cat:src.cat||'own', score};
+  };
+  const seen = new Set(), pickTop = (arr, k, diverse) => {
+    const sorted = arr.filter(Boolean).sort((a,b)=>b.score-a.score)
+      .filter(x=>{ const key = x.name.toLowerCase(); if(seen.has(key)) return false; seen.add(key); return true; });
+    if(!diverse) return sorted.slice(0, k);
+    // Abwechslung: zuerst das Beste je Gruppe (Milchprodukte, Fleisch, Fisch, Pflanzlich …), dann auffüllen
+    const out = [], cats = new Set();
+    for(const x of sorted) if(out.length < k && !cats.has(x.cat)){ out.push(x); cats.add(x.cat); }
+    for(const x of sorted) if(out.length < k && !out.includes(x)) out.push(x);
+    return out.sort((a,b)=>b.score-a.score);
+  };
+  const mine = pickTop((own||[]).map(o=>build(o, true)), 3);
+  const base = pickTop(PROTEIN_FOODS.map(o=>build(o, false)), n - mine.length, true);
+  return [...mine, ...base];
+}
 /*LOGIC-END*/
 
 // ---------------- UI ----------------
@@ -858,14 +905,13 @@ const defaultState = () => ({
   schedule:Object.fromEntries(DAYS.map(d=>[d.k,{on:false,time:'18:00',dur:60}])),
   seed:0, swaps:{}, logs:[], active:null, tab:'plan', sub:null, theme:'auto', sound:true, timer:null,
   food:{days:{}, favs:[], recent:[]}, weights:[], cycleStart:null, deloadUntil:null, deloadSnooze:null,
-  custom:{}, customEx:[], notes:{}, water:{}, measures:[], barKg:20, created:null, lastBackup:null, backupSnooze:null,
-  push:{on:false, lead:30, food:false, foodTime:'20:00'}
+  custom:{}, customEx:[], notes:{}, water:{}, measures:[], barKg:20, created:null, lastBackup:null, backupSnooze:null
 });
 function normalize(s){
   const d = defaultState();
   const st = {...d, ...s, profile:{...d.profile,...(s.profile||{})}, schedule:{...d.schedule,...(s.schedule||{})},
     logs:Array.isArray(s.logs)?s.logs:[], weights:Array.isArray(s.weights)?s.weights:[],
-    food:{...d.food, ...(s.food||{})}, push:{...d.push, ...(s.push||{})},
+    food:{...d.food, ...(s.food||{})},
     custom:s.custom||{}, customEx:Array.isArray(s.customEx)?s.customEx:[], notes:s.notes||{}, water:s.water||{}, measures:Array.isArray(s.measures)?s.measures:[]};
   st.profile.issues = Array.isArray(st.profile.issues) ? st.profile.issues : [];
   st.profile.noEq = Array.isArray(st.profile.noEq) ? st.profile.noEq : [];
@@ -883,8 +929,7 @@ function load(){
 let state = load() || defaultState();
 if(!state.created) state.created = todayStr();
 registerCustomEx(state.customEx);
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast('Speichern nicht möglich – Speicher voll?'); }
-  try{ schedulePushSync(); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast('Speichern nicht möglich – Speicher voll?'); } }
 const ui = { editDay:null, openDay:null, pickQ:'', mSel:'taille', foodDate: todayStr(), addMeal:'fruehstueck', sheet:null, search:[], searchQ:'', pending:null, scanner:null, exSel:null, wRange:28, libQ:'' };
 
 const $ = s => document.querySelector(s);
@@ -1198,9 +1243,10 @@ function viewEssen(){
       <button class="icon" data-action="fday" data-d="1" aria-label="Nächster Tag" ${isToday?'disabled':''}>›</button></div>
   <div class="card">
     <div class="rings">${ringSvg(sum.kcal, tgt.kcal, 'Kalorien',' kcal')}${ringSvg(sum.p, tgt.p, 'Protein',' g')}</div>
-    <p class="small muted" style="text-align:center;margin:4px 0 8px">${sum.kcal<=tgt.kcal ? `Noch <b>${Math.round(tgt.kcal-sum.kcal)} kcal</b> übrig` : `<b style="color:var(--warn)">${Math.round(sum.kcal-tgt.kcal)} kcal</b> über dem Ziel`}${sum.p<tgt.p?` · noch ${Math.round(tgt.p-sum.p)} g Protein`:''}</p>
+    <p class="small muted" style="text-align:center;margin:4px 0 8px">${sum.kcal<=tgt.kcal ? `Noch <b>${Math.round(tgt.kcal-sum.kcal)} kcal</b> übrig` : `<b style="color:var(--warn)">${Math.round(sum.kcal-tgt.kcal)} kcal</b> über dem Ziel`}${sum.p<tgt.p?` · noch ${Math.round(tgt.p-sum.p)} g Protein`:' · <b style="color:var(--ok)">✓ Proteinziel erreicht</b>'}</p>
     ${macroBar('Kohlenhydrate', sum.c, tgt.c)}${macroBar('Fett', sum.f, tgt.f)}
   </div>
+  ${proteinCard(tgt, sum)}
   ${MEALS.map(([k,l])=>{const items=list.filter(e=>e.meal===k), ms=sumEntries(items);return `<div class="card meal">
     <div class="row"><h2 style="margin:0;font-size:16px">${l}</h2><span class="spacer"></span><span class="small muted">${Math.round(ms.kcal)} kcal</span>
       <button class="icon primary addbtn" data-action="foodAdd" data-meal="${k}" aria-label="${l} hinzufügen">+</button></div>
@@ -1570,7 +1616,6 @@ function viewEinstellungen(){
   return `<div class="card"><h2>Darstellung</h2>
     <div class="seg">${[['auto','Automatisch'],['light','Hell'],['dark','Dunkel']].map(([k,l])=>`<button data-action="theme" data-value="${k}" class="${th===k?'on':''}">${l}</button>`).join('')}</div>
     <p class="small muted" style="margin:8px 0 0">„Automatisch“ folgt der Einstellung deines iPhones.</p></div>
-  ${pushCard()}
   <div class="card"><h2>Langhantel-Stange</h2>
     <div class="seg">${[20,15,10].map(k=>`<button data-action="barKg" data-v="${k}" class="${(state.barKg||20)===k?'on':''}">${k} kg</button>`).join('')}</div>
     <p class="small muted" style="margin:8px 0 0">Wird für den Scheibenrechner im Training genutzt (Standard-Stange 20 kg, Frauen-Stange 15 kg). Trap-Bar: 25 kg.</p></div>
@@ -1720,86 +1765,21 @@ function measuresCard(){
   </div>`;
 }
 
-// ---- Push-Erinnerungen ----
-const PUSH = window.TP_PUSH || {};
-const pushReady = () => !!(PUSH.server && PUSH.vapidPublicKey);
-const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-const isStandalone = () => window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-const hmToMin = hm => { const [h,m] = String(hm||'0:0').split(':').map(Number); return (h||0)*60 + (m||0); };
-function pushItems(){
-  const items = [], lead = +state.push.lead || 30, plan = profileValid(state.profile) ? getPlan(state) : null;
-  if(plan) for(const s of plan.sessions){
-    if(!s.time) continue;
-    let t = hmToMin(s.time) - lead, dow = DAYS.findIndex(d=>d.k===s.day);
-    if(t < 0){ t += 1440; dow = (dow+6)%7; }
-    items.push({dow, hm:pad2(Math.floor(t/60))+':'+pad2(t%60), title:`💪 In ${lead} Min.: ${s.label}`,
-      body:`${s.dayLong}, ${s.time} Uhr · ${s.items.length} Übungen, ca. ${s.est} Min.${s.deload?' · Entlastungswoche':''}`});
-  }
-  if(state.push.food && /^\d{2}:\d{2}$/.test(state.push.foodTime||'')) items.push({dow:-1, hm:state.push.foodTime, title:'🍽 Essen eintragen', body:'Hast du heute schon alles in der App notiert?'});
-  return items;
-}
-const pushHash = () => hashStr(JSON.stringify([pushItems(), Intl.DateTimeFormat().resolvedOptions().timeZone]));
-const b64uBytes = s => { s = s.replace(/-/g,'+').replace(/_/g,'/'); const b = atob(s + '='.repeat((4-s.length%4)%4)); return Uint8Array.from(b, c=>c.charCodeAt(0)); };
-async function pushPost(path, data){
-  const r = await fetch(PUSH.server.replace(/\/$/,'') + path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-  if(!r.ok) throw new Error('Server antwortet mit '+r.status);
-  return r.json();
-}
-async function pushSync(sub, test){
-  const reg = await navigator.serviceWorker.ready;
-  sub = sub || await reg.pushManager.getSubscription();
-  if(!sub){ state.push.on = false; save(); render(); return; }
-  await pushPost('/subscribe', {subscription:sub.toJSON(), tz:Intl.DateTimeFormat().resolvedOptions().timeZone, items:pushItems(), test:!!test});
-  state.push.hash = pushHash(); state.push.synced = new Date().toISOString(); state.push.err = null;
-  try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
-}
-let pushTimer = null;
-function schedulePushSync(){
-  if(!state.push || !state.push.on || !pushReady() || !pushSupported()) return;
-  if(pushHash() === state.push.hash) return;
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(()=>{ pushSync().catch(e=>{ state.push.err = e.message; }); }, 2000);
-}
-async function pushEnable(){
-  // requestPermission muss direkt im Tipp aufgerufen werden (iOS)
-  let perm; try{ perm = await Notification.requestPermission(); }catch(e){ perm = 'denied'; }
-  if(perm !== 'granted'){ toast('Benachrichtigungen wurden nicht erlaubt', 3000); render(); return; }
-  try{
-    const reg = await navigator.serviceWorker.ready;
-    let sub = await reg.pushManager.getSubscription();
-    if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64uBytes(PUSH.vapidPublicKey)});
-    state.push.on = true;
-    await pushSync(sub, true);
-    toast('Erinnerungen aktiviert – Test-Nachricht ist unterwegs', 3000);
-  }catch(e){ state.push.on = false; state.push.err = e.message; toast('Aktivieren hat nicht geklappt: '+e.message, 4000); }
-  save(); render();
-}
-async function pushDisable(){
-  try{
-    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
-    if(sub){ await pushPost('/unsubscribe', {subscription:sub.toJSON()}).catch(()=>{}); await sub.unsubscribe(); }
-  }catch(e){}
-  state.push.on = false; state.push.hash = null; save(); render(); toast('Erinnerungen deaktiviert');
-}
-function pushCard(){
-  const P = state.push, head = '<div class="card"><h2>🔔 Erinnerungen</h2>';
-  if(!pushReady()) return head + `<p class="small muted" style="margin:0">Push-Erinnerungen sind noch nicht eingerichtet (siehe <b>ANLEITUNG-PUSH.md</b>). Ohne Einrichtung kannst du unter „Mehr → In den iPhone-Kalender“ Termine mit Erinnerung anlegen.</p></div>`;
-  if(!pushSupported()) return head + `<p class="small muted" style="margin:0">${isIOS() && !isStandalone() ? 'Auf dem iPhone funktionieren Benachrichtigungen nur, wenn du die App über das Icon auf dem Home-Bildschirm öffnest (ab iOS 16.4).' : 'Dieser Browser unterstützt keine Push-Benachrichtigungen.'}</p></div>`;
-  if(isIOS() && !isStandalone()) return head + `<p class="small muted" style="margin:0">Öffne die App über das Icon auf dem Home-Bildschirm, um Erinnerungen zu aktivieren.</p></div>`;
-  if(Notification.permission === 'denied') return head + `<p class="small muted" style="margin:0">Benachrichtigungen sind blockiert. Erlaube sie unter <b>Einstellungen → Mitteilungen → Trainingsplan</b> und öffne die App neu.</p></div>`;
-  const items = pushItems(), dn = i => i.dow===-1 ? 'täglich' : DAYS[i.dow].s;
-  const opts = `<h3>Vorlauf vor dem Training</h3>
-    <div class="seg">${[15,30,60].map(m=>`<button data-action="pushLead" data-v="${m}" class="${(+P.lead||30)===m?'on':''}">${m} Min.</button>`).join('')}</div>
-    <label class="chkrow" style="margin-top:10px"><input type="checkbox" id="pushFood" ${P.food?'checked':''}><span style="flex:1">Täglich ans Essen-Eintragen erinnern</span><input type="time" id="pushFoodTime" value="${esc(P.foodTime||'20:00')}" style="width:auto;min-height:36px;padding:4px 8px"></label>`;
-  if(!P.on) return head + `<p class="small muted" style="margin:-4px 0 10px">Die App erinnert dich vor jedem Training – auch wenn sie geschlossen ist.</p>${opts}
-    <button class="primary" style="width:100%;margin-top:12px" data-action="pushOn">Erinnerungen aktivieren</button>
-    <p class="small muted" style="margin:8px 0 0">Dafür werden Push-Adresse, Zeitzone und deine Termine an den Erinnerungs-Server übertragen (siehe Datenschutz).</p></div>`;
-  return head + `<p class="small" style="margin:-4px 0 6px"><span style="color:var(--ok)">✓ Aktiv</span>${P.err?` <span style="color:var(--danger)">· Abgleich fehlgeschlagen: ${esc(P.err)}</span>`:''}</p>
-    <div class="row wrap" style="gap:6px">${items.map(i=>`<span class="pill">${dn(i)} ${i.hm}</span>`).join('') || '<span class="small muted">Keine Termine – wähle Trainingstage mit Uhrzeit.</span>'}</div>
-    ${opts}
-    <div class="row" style="margin-top:12px"><button style="flex:1" data-action="pushTest">Test senden</button><button class="ghost danger" style="flex:1" data-action="pushOff">Deaktivieren</button></div>
-    <p class="small muted" style="margin:8px 0 0">Änderungen an Plan und Zeiten werden automatisch übernommen.</p></div>`;
+
+// ---- Protein-Hilfe ----
+function mealByTime(){ if(ui.foodDate!==todayStr()) return 'snack'; const h = new Date().getHours(); return h<10 ? 'fruehstueck' : h<15 ? 'mittag' : h<21 ? 'abend' : 'snack'; }
+function proteinCard(tgt, sum){
+  const miss = Math.round(tgt.p - sum.p);
+  if(miss < 10){ ui.protList = []; return ''; }
+  const kLeft = Math.round(tgt.kcal - sum.kcal);
+  const list = ui.protList = proteinSuggestions(miss, kLeft, [...state.food.favs, ...state.food.recent]);
+  if(!list.length) return '';
+  return `<div class="card"><h2 style="font-size:16px">💡 Protein-Hilfe</h2>
+    <p class="small muted" style="margin:-4px 0 6px">Noch <b>${miss} g Protein</b> offen · ${kLeft>0 ? kLeft+' kcal übrig' : 'Kalorienziel schon erreicht'}</p>
+    ${list.map((f,i)=>`<div class="fitem2"><div class="fpick"><span class="fn">${esc(f.name)}${f.own?' <span class="pill heavy">deins</span>':''}</span>
+      <span class="small muted">${f.g?fmt(f.g)+' g · ':''}<b style="color:var(--accent)">+${fmt(f.p)} g Protein</b> · ${Math.round(f.kcal)} kcal</span></div>
+      <button class="icon primary addbtn" data-action="protAdd" data-i="${i}" aria-label="${esc(f.name)} hinzufügen">+</button></div>`).join('')}
+    <p class="small muted" style="margin:8px 0 0">Sortiert nach Eiweiß pro Kalorie. Grundliste: Durchschnittswerte – bei Markenprodukten weichen sie etwas ab.</p></div>`;
 }
 
 // ================= Events =================
@@ -1908,10 +1888,6 @@ document.addEventListener('click', e=>{
     case 'backupLater': state.backupSnooze = addDays(todayStr(), 7); break;
     case 'issue': { const v=b.dataset.v, a=state.profile.issues; state.profile.issues = a.includes(v) ? a.filter(x=>x!==v) : [...a, v]; state.swaps={}; break; }
     case 'barKg': state.barKg = +b.dataset.v; break;
-    case 'pushOn': pushEnable(); return;
-    case 'pushOff': if(!confirm('Erinnerungen deaktivieren?')) return; pushDisable(); return;
-    case 'pushTest': pushSync(null, true).then(()=>toast('Test-Nachricht gesendet')).catch(e=>toast('Fehler: '+e.message, 4000)); return;
-    case 'pushLead': state.push.lead = +b.dataset.v; break;
     case 'editDay': ui.editDay = ui.editDay===b.dataset.day ? null : b.dataset.day; ui.openDay = b.dataset.day; render(); return;
     case 'mv': { const s0=planSession(b.dataset.day); if(!s0) return; const keys=s0.items.map(i=>i.key), i=keys.indexOf(b.dataset.key), j=i+(+b.dataset.d);
       if(i<0||j<0||j>=keys.length) return; [keys[i],keys[j]]=[keys[j],keys[i]]; cust(b.dataset.day).order = keys; ui.openDay=b.dataset.day; break; }
@@ -1943,6 +1919,9 @@ document.addEventListener('click', e=>{
       const old=state.measures.find(x=>x.date===m.date); state.measures = state.measures.filter(x=>x.date!==m.date); state.measures.push({...(old||{}), ...m});
       toast('Maße gespeichert'); break; }
     case 'mSel': ui.mSel = b.dataset.k; render(); return;
+    case 'protAdd': { const f = (ui.protList||[])[+b.dataset.i]; if(!f) return; ui.addMeal = mealByTime();
+      if(f.per100){ openSheet('amount', {food:{name:f.name, per100:f.per100}, g:f.g}); return; }
+      addEntry({name:f.name, kcal:Math.round(f.kcal), p:f.p, c:f.c, f:f.f}); toast(f.name.slice(0,30)+' hinzugefügt'); break; }
     case 'mDel': state.measures = state.measures.filter(x=>x.date!==b.dataset.d); break;
     case 'copy': navigator.clipboard.writeText(exportData()).then(()=>{ state.lastBackup=todayStr(); save(); toast('Kopiert'); },()=>toast('Kopieren nicht möglich')); return;
     case 'importText': importData($('#importText').value); return;
@@ -1972,8 +1951,6 @@ document.addEventListener('change', e=>{
   if(t.dataset.sched){ state.schedule[t.dataset.sched][t.dataset.key] = t.dataset.key==='dur' ? +t.value : t.value; save(); }
   else if(t.id==='importFile' && t.files[0]){ t.files[0].text().then(importData); }
   else if(t.id==='exSel'){ ui.exSel = t.value; render(); }
-  else if(t.id==='pushFood'){ state.push.food = t.checked; save(); }
-  else if(t.id==='pushFoodTime'){ if(/^\d{2}:\d{2}$/.test(t.value)){ state.push.foodTime = t.value; save(); } }
   else if(t.dataset.eq){ const k=t.dataset.eq, a=state.profile.noEq; state.profile.noEq = t.checked ? a.filter(x=>x!==k) : [...new Set([...a,k])]; state.swaps={}; save(); }
 });
 document.addEventListener('toggle', e=>{ const d=e.target; if(d.classList && d.classList.contains('sess') && d.open) ui.openDay = d.dataset.day; }, true);
