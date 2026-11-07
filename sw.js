@@ -1,7 +1,7 @@
 // Offline-Cache: bei neuer Version CACHE-Namen erhöhen
-const CACHE = 'trainingsplan-v5';
+const CACHE = 'trainingsplan-v6';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-512.png',
-  './html5-qrcode.min.js', './datenschutz.html'];
+  './barcode-detector.js', './zxing_reader.wasm', './datenschutz.html'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
