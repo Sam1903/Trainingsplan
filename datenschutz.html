@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Datenschutz</title>
+<style>
+:root{--bg:#f4f5f2;--card:#fff;--text:#1b1f1d;--muted:#626b66;--line:#dfe3de;--accent:#0f766e;--mark:#fbefd9}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1211;--card:#191d1b;--text:#e8ece9;--muted:#9aa49f;--line:#2c322f;--accent:#2bb3a6;--mark:#3a2c14}}
+:root[data-theme="dark"]{--bg:#0f1211;--card:#191d1b;--text:#e8ece9;--muted:#9aa49f;--line:#2c322f;--accent:#2bb3a6;--mark:#3a2c14}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:680px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:24px;margin:0 0 4px} h2{font-size:18px;margin:26px 0 6px}
+p,li{color:var(--text)} .muted{color:var(--muted);font-size:14px}
+a{color:var(--accent)}
+mark{background:var(--mark);color:inherit;padding:0 3px;border-radius:4px}
+.back{display:inline-block;margin-bottom:14px;font-size:15px}
+</style>
+<script>try{var t=(JSON.parse(localStorage.getItem('ganzkoerper-plan-v1')||'{}')||{}).theme;if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+</head>
+<body>
+<main>
+<a class="back" href="./">← Zurück zur App</a>
+<h1>Datenschutzerklärung</h1>
+<p class="muted">Stand: <mark>[Datum einsetzen]</mark></p>
+
+<h2>1. Verantwortlich</h2>
+<p><mark>[Vor- und Nachname]</mark><br><mark>[Straße, Hausnummer]</mark><br><mark>[PLZ Ort]</mark><br>E-Mail: <mark>[Kontakt-E-Mail]</mark></p>
+<p>Diese App ist ein privates, nicht-kommerzielles Projekt.</p>
+
+<h2>2. Welche Daten verarbeitet werden</h2>
+<p>Alle Eingaben – Größe, Gewicht, Alter, optional Geschlecht, Trainingsziel und -level, Trainingszeiten, Trainingsverlauf, Ernährungseinträge und Gewichtsverlauf – werden <b>ausschließlich lokal</b> im Speicher deines Browsers bzw. Geräts gespeichert. Sie werden nicht an mich oder Dritte übertragen. Es gibt keine Benutzerkonten, keine Werbung und kein Tracking.</p>
+<p>Diese Angaben können Gesundheitsdaten sein. Da sie dein Gerät nicht verlassen, hast nur du Zugriff darauf.</p>
+
+<h2>3. Hosting</h2>
+<p>Die App-Dateien werden über GitHub Pages (GitHub, Inc., USA) ausgeliefert. Beim Aufruf verarbeitet GitHub technisch notwendige Verbindungsdaten wie deine IP-Adresse, um die Seite auszuliefern. Danach funktioniert die App auch offline.</p>
+
+<h2>4. Lebensmittelsuche (Open Food Facts)</h2>
+<p>Nur wenn du im Bereich „Essen“ ein Lebensmittel suchst oder einen Barcode scannst, sendet die App den <b>Suchbegriff bzw. die Barcode-Nummer</b> direkt an die offene Datenbank Open Food Facts (Open Food Facts, gemeinnütziger Verein, Frankreich). Dabei wird technisch bedingt deine IP-Adresse übertragen. Es werden keine weiteren Daten (z. B. Gewicht oder Profil) gesendet. Rechtsgrundlage ist dein Interesse an der Funktion (Art. 6 Abs. 1 lit. f DSGVO); ohne Suche oder Scan findet keine Übertragung statt.</p>
+
+<h2>5. Kamera</h2>
+<p>Für den Barcode-Scanner fragt die App um Erlaubnis für die Kamera. Das Kamerabild wird ausschließlich auf deinem Gerät ausgewertet, nicht gespeichert und nicht übertragen. Die Erlaubnis kannst du jederzeit in den iPhone-Einstellungen widerrufen.</p>
+
+<h2>6. Speicherdauer</h2>
+<p>Die Daten bleiben auf deinem Gerät, bis du sie in der App unter <b>Mehr → Einstellungen → Alle Daten löschen</b> entfernst, die App vom Home-Bildschirm löschst oder die Websitedaten in Safari löschst.</p>
+
+<h2>7. Deine Rechte</h2>
+<p>Da ich keine Daten von dir erhalte, kannst du Auskunft, Export (unter <b>Mehr → Einstellungen → Sicherung</b>) und Löschung direkt selbst in der App vornehmen. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p>
+
+<h2>8. Hinweis</h2>
+<p class="muted">Der Trainingsplan ist eine allgemeine Empfehlung und ersetzt keine ärztliche oder trainerische Beratung.</p>
+</main>
+</body>
+</html>
