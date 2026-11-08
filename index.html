@@ -240,6 +240,93 @@ ol.plain{margin:4px 0 0;padding-left:20px} ol.plain li{margin:3px 0;font-size:14
 .mtable td,.mtable th{padding:5px 4px;border-top:1px solid var(--line)}
 .mtable .neg{color:var(--ok)} .mtable .pos{color:var(--warn)}
 /* Pausen-Timer */
+/* --- Design: Heute, Fokus, Makro-Ring, Feinschliff --- */
+:root{--mp:var(--accent);--mc:var(--light);--mf:var(--warn)}
+header.top h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.card h2{font-weight:700;letter-spacing:-.01em}
+.stat b{font-size:22px;font-weight:700;letter-spacing:-.01em}
+button{transition:transform .08s ease, background-color .15s}
+button:active:not(:disabled){transform:scale(.97)}
+button.big{min-height:56px;font-size:17px;font-weight:700;border-radius:14px}
+h2.sect{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 4px 8px}
+details.tipbox{margin-top:8px;font-size:13px;color:var(--muted)}
+details.tipbox>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 0;min-height:32px}
+details.tipbox>summary::-webkit-details-marker{display:none}
+details.tipbox .ti{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font:700 11px/1 Georgia,serif;font-style:italic}
+details.tipbox[open]>summary{color:var(--text)}
+details.tipbox>div{padding:4px 0 2px;line-height:1.5}
+/* Heute */
+.card.hero{background:linear-gradient(145deg,var(--accent-soft),var(--card) 70%);border-color:transparent;padding:18px}
+.hdate{font-size:13px;color:var(--muted);text-transform:capitalize}
+.hk{margin-top:10px;font-size:13px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+.ht{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:2px 0 4px}
+.hmeta{font-size:14px;color:var(--muted)}
+.card.hero .chips{margin:10px 0 14px}
+.card.hero button.big{width:100%;margin-top:12px}
+.hbar{height:8px;border-radius:4px;background:var(--card2);overflow:hidden;margin:10px 0 2px}
+.hbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 4px 10px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}
+.tile svg.mini{width:34px;height:34px;margin-bottom:4px}
+.tile .tv{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1;white-space:nowrap}
+.tile .tv small{font-size:11px;font-weight:600;color:var(--muted)}
+.tile .tl{font-size:11px;color:var(--muted);text-align:center;line-height:1.2}
+svg.mini .rtrack,svg.mini .rfill{stroke-width:5}
+svg.mini.mp .rfill{stroke:var(--mp)} svg.mini.mw .rfill{stroke:#3b9bdc} svg.mini.ms .rfill{stroke:var(--warn)} svg.mini.over .rfill{stroke:var(--danger)}
+/* Makro-Ring */
+.mring{display:flex;align-items:center;gap:14px}
+.ringbox{position:relative;width:126px;flex:none}
+.ringbox svg{width:126px;height:126px;display:block}
+.ringbox .rtrack{stroke-width:11}
+.mseg{fill:none;stroke-width:11;stroke-linecap:butt;transition:stroke-dasharray .4s}
+.mseg.mp{stroke:var(--mp)} .mseg.mc{stroke:var(--mc)} .mseg.mf{stroke:var(--mf)}
+.rtxt2{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.rtxt2 b{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rtxt2 b.warnc{color:var(--danger)}
+.rtxt2 span{font-size:12px;color:var(--muted)} .rtxt2 em{font-style:normal;font-size:11px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.mleg{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.mrow .row{gap:6px;font-size:13px;flex-wrap:nowrap} .mrow .row>span:nth-of-type(1){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .mnum{white-space:nowrap;font-variant-numeric:tabular-nums}
+.mrow .dot{width:9px;height:9px;border-radius:50%;flex:none} .dot.mp{background:var(--mp)} .dot.mc{background:var(--mc)} .dot.mf{background:var(--mf)}
+.mtrack{height:6px;border-radius:3px;background:var(--card2);overflow:hidden;margin-top:4px}
+.mtrack i{display:block;height:100%;border-radius:3px} .mtrack i.mp{background:var(--mp)} .mtrack i.mc{background:var(--mc)} .mtrack i.mf{background:var(--mf)}
+.okm{color:var(--ok);font-weight:800;margin-left:4px}
+/* Protein-Kacheln */
+.hscroll{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:10px -16px -4px;padding:2px 16px 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.pcard{position:relative;flex:0 0 140px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px;border-radius:12px;background:var(--card2);border:1px solid var(--line);min-height:104px}
+.pcard .pp{font-size:18px;font-weight:800;color:var(--accent)}
+.pcard .pn{font-size:14px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pcard .padd{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:17px}
+/* Fokus-Modus */
+.focus .fprog{height:6px;border-radius:3px;background:var(--card2);overflow:hidden}
+.focus .fprog i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.focus .fmeta{margin:8px 2px 10px}
+.fcard{padding:18px}
+.fcard .fname{font-size:22px;font-weight:800;letter-spacing:-.01em;text-align:left;line-height:1.2}
+.fsets{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 6px}
+.fdot{width:42px;height:42px;min-width:42px;min-height:42px;padding:0;border-radius:50%;font-weight:700;font-variant-numeric:tabular-nums}
+.fdot.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.fdot.cur{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--accent)}
+.fdot.add{background:transparent;border-style:dashed;color:var(--muted)}
+.fsteps{display:grid;gap:12px;margin:12px 0 6px}
+.fstep .flbl{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.stepper{display:grid;grid-template-columns:64px 1fr 64px;gap:8px}
+.stepper .sb{min-height:60px;font-size:28px;font-weight:600;border-radius:14px;padding:0}
+.stepper input{min-height:60px;text-align:center;font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;border-radius:14px;padding:4px}
+.fdone{width:100%;margin-top:12px}
+.fdone.is-done{background:var(--ok);border-color:var(--ok);color:#fff}
+.fnav{gap:10px;margin-top:4px} .fnav button.big{min-width:64px;font-size:26px}
+.bigtimer{display:flex;flex-direction:column;align-items:center;gap:12px;border-color:var(--accent)}
+.btring{position:relative;width:170px;height:170px}
+.btring svg{width:170px;height:170px} .btring .rtrack,.btring .rfill{stroke-width:9}
+.btring .rfill{transition:stroke-dashoffset .25s linear}
+.btxt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.btxt span{font-size:13px;color:var(--muted)} .btxt b{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.btbtns{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px;width:100%} .btbtns button{min-height:50px;font-weight:600}
+/* Bottom-Sheet Griff */
+#sheetBody::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:-4px auto 10px}
+@media (prefers-reduced-motion: reduce){button{transition:none} button:active:not(:disabled){transform:none}}
 #timerbar{position:fixed;left:8px;right:8px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:12;background:var(--card);border:1px solid var(--accent);
   border-radius:14px;padding:8px 10px 8px 14px;box-shadow:0 6px 20px rgba(0,0,0,.18);overflow:hidden;max-width:624px;margin:0 auto}
 #timerbar .tprog{position:absolute;left:0;top:0;bottom:0;background:var(--accent-soft);transition:width .25s linear}
@@ -1142,22 +1229,24 @@ const fmt = n => (Math.round(n*10)/10).toLocaleString('de-DE');
 const fmt2 = n => (+n).toLocaleString('de-DE',{maximumFractionDigits:2});
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function toast(msg, ms){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'), ms||1800); }
+// Erklärtext hinter einem ⓘ verstecken
+function tip(html, label){ return `<details class="tipbox"><summary><span class="ti">i</span>${label||'Info'}</summary><div>${html}</div></details>`; }
 function go(tab, sub){ state.tab = tab; state.sub = sub||null; window.scrollTo(0,0); }
 
 const SV = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const ICONS = {
-  plan:SV('<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>'),
+  plan:SV('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>'),
   log:SV('<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>'),
   essen:SV('<path d="M7 2v8a2 2 0 0 0 2 2v10M11 2v8a2 2 0 0 1-2 2M17 2c-1.7 0-3 2.2-3 5s1.3 5 3 5v10"/>'),
   fortschritt:SV('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/>'),
   mehr:SV('<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>')
 };
-const TABS = [['plan','Plan'],['log','Training'],['essen','Essen'],['fortschritt','Fortschritt'],['mehr','Mehr']];
+const TABS = [['plan','Heute'],['log','Training'],['essen','Essen'],['fortschritt','Fortschritt'],['mehr','Mehr']];
 const SUBS = {profil:['Profil',()=>viewProfil()], zeiten:['Trainingszeiten',()=>viewZeiten()], einstellungen:['Einstellungen',()=>viewEinstellungen()], uebungen:['Übungen',()=>viewUebungen()]};
 
 function render(){
   $('#tabs').innerHTML = TABS.map(([k,l])=>`<button data-action="tab" data-tab="${k}" class="${state.tab===k?'act':''}" aria-label="${l}">${ICONS[k]}<span>${l}</span></button>`).join('');
-  const titles = {plan:'Dein Wochenplan', log:'Training', essen:'Ernährung', fortschritt:'Fortschritt', mehr:'Mehr'};
+  const titles = {plan:'Heute', log:'Training', essen:'Ernährung', fortschritt:'Fortschritt', mehr:'Mehr'};
   const sub = state.tab==='mehr' && state.sub && SUBS[state.sub];
   $('#title').textContent = sub ? sub[0] : titles[state.tab];
   const nOn = DAYS.filter(d=>state.schedule[d.k].on).length;
@@ -1265,31 +1354,8 @@ function deloadCard(){
     <div class="row"><button class="primary" style="flex:1" data-action="deloadStart">Diese Woche entlasten</button><button style="flex:1" data-action="deloadSnooze">Später</button></div></div>`;
   return '';
 }
-function viewPlan(){
-  const plan = getPlan(state);
-  if(!plan){
-    const pOk = profileValid(state.profile);
-    return `<div class="card empty"><h2>Willkommen! 👋</h2>
-      <p class="muted">${pOk?'Wähle mindestens einen Trainingstag aus.':'Gib zuerst deine Körperdaten ein – daraus entsteht dein persönlicher Plan.'}</p>
-      <button class="primary" data-action="go" data-tab="mehr" data-sub="${pOk?'zeiten':'profil'}">${pOk?'Trainingstage wählen':'Profil ausfüllen'}</button></div>`;
-  }
-  if(!state.cycleStart){ state.cycleStart = weekStart(todayStr()); save(); }
-  const c = plan.ctx;
-  const maxV = Math.max(1,...Object.values(plan.volume));
-  const target = [[8,12],[10,16],[12,20]][c.L-1];
-  const hints = c.hints.concat(plan.splitHints);
-  if(plan.consecutive) hints.push(['Aufeinanderfolgende Tage','Nach einem Trainingstag folgt eine leichtere Einheit (weniger Sätze, mehr Wiederholungen, RPE 6–7), damit du dich erholen kannst.']);
-  return `${backupCard()}${deloadCard()}<div class="card">
-    <div class="row wrap" style="gap:6px"><h2 style="margin:0">Übersicht</h2><span class="spacer"></span><span class="pill heavy">${esc(SPLITS[plan.split].n)}</span><span class="pill">${LEVELS[state.profile.level].n} · ${GOALS[c.goal].n}</span></div>
-    <div class="stats" style="margin-top:12px">
-      <div class="stat"><b>${fmt(c.bmi)}</b><span>BMI</span></div>
-      <div class="stat"><b>${Math.round(c.kcal/50)*50}</b><span>kcal / Tag*</span></div>
-      <div class="stat"><b>${c.prot[0]}–${c.prot[1]} g</b><span>Protein / Tag</span></div>
-    </div>
-    <p class="small muted" style="margin:4px 0 0">*Grobe Schätzung (Grundumsatz ${Math.round(c.bmr)} kcal, Gesamtumsatz ca. ${Math.round(c.tdee/50)*50} kcal${GOALS[c.goal].kcal?`, ${GOALS[c.goal].kcal>0?'+':''}${GOALS[c.goal].kcal} kcal für dein Ziel`:''}). Details unter „Essen“.</p>
-    ${hints.map(h=>`<div class="hint"><b>${esc(h[0])}:</b> ${esc(h[1])}</div>`).join('')}
-  </div>
-  ${plan.sessions.map((s,si)=>`<details class="sess" data-day="${s.day}" ${(ui.openDay ? ui.openDay===s.day : si===0)?'open':''}>
+function sessionsHtml(plan, c){
+  return `${plan.sessions.map((s,si)=>`<details class="sess" data-day="${s.day}" ${ui.openDay===s.day?'open':''}>
     <summary><div class="row"><div><div class="t">${s.dayLong}${s.time?` · ${esc(s.time)}`:''}</div>
       <div class="small"><b>${esc(s.label)}</b> <span class="muted">· ${s.items.length} Übungen · ca. ${s.est} von ${s.dur} Min.</span></div></div>
       <span class="spacer"></span><span class="pill ${s.deload||s.light?'light':'heavy'}">${s.deload?'Entlastung':s.light?'leicht':'normal'}</span></div>
@@ -1309,14 +1375,91 @@ function viewPlan(){
       <h3>Cooldown</h3><ul class="plain">${s.cooldown.map(w=>`<li>${esc(w)}</li>`).join('')}</ul>
       ${ui.editDay===s.day?`<div class="row wrap" style="margin-top:10px"><button style="flex:1" data-action="pickEx" data-day="${s.day}">+ Übung hinzufügen</button>${state.custom[s.day]?`<button class="ghost danger" data-action="resetDay" data-day="${s.day}">Zurücksetzen</button>`:''}</div><p class="small muted">Änderungen gelten für jeden ${s.dayLong} und bleiben auch bei „Neue Übungsauswahl“ erhalten.</p>`:''}
       <button class="primary" style="width:100%;margin-top:14px" data-action="start" data-day="${s.day}">Einheit starten</button>
-    </div></details>`).join('')}
+    </div></details>`).join('')}`;
+}
+// ---- Startseite „Heute“ ----
+function weekStreak(){
+  const ws0 = weekStart(todayStr()), planned = DAYS.filter(d=>state.schedule[d.k].on).length;
+  const wc = s => state.logs.filter(l=>weekStart(todayStr(new Date(l.date)))===s).length;
+  let streak = 0, w = wc(ws0)>=planned && planned ? ws0 : addDays(ws0,-7);
+  while(planned && wc(w)>=planned){ streak++; w = addDays(w,-7); }
+  return {streak, week:wc(ws0), planned};
+}
+function miniRing(pct, cls){
+  const r = 15.5, C = 2*Math.PI*r;
+  return `<svg class="mini ${cls||''}" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="${r}" class="rtrack"/><circle cx="18" cy="18" r="${r}" class="rfill" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-Math.max(0,Math.min(1,pct||0)))}" transform="rotate(-90 18 18)"/></svg>`;
+}
+function todayCard(plan){
+  const t = todayStr(), a = state.active;
+  const s = plan.sessions.find(x=>x.day===dayKeyOf(t));
+  const doneToday = state.logs.some(l=>todayStr(new Date(l.date))===t);
+  const dateL = new Date().toLocaleDateString('de-DE',{weekday:'long', day:'numeric', month:'long'});
+  let next = '';
+  for(let i=1;i<=7;i++){ const d = addDays(t,i), n = plan.sessions.find(x=>x.day===dayKeyOf(d));
+    if(n){ next = `Nächstes Training: <b>${i===1?'morgen':esc(n.dayLong)}</b>${n.time?' · '+esc(n.time):''} · ${esc(n.label)}`; break; } }
+  let main;
+  if(a){
+    const doneN = a.items.reduce((x,i)=>x+i.sets.filter(y=>y.done).length,0), total = a.items.reduce((x,i)=>x+i.sets.length,0);
+    main = `<div class="hk">Läuft gerade</div><div class="ht">${esc(a.label)}</div>
+      <div class="hbar"><i style="width:${total?doneN/total*100:0}%"></i></div>
+      <button class="primary big" data-action="go" data-tab="log">Weiter trainieren · ${doneN}/${total} Sätze</button>`;
+  } else if(s && !doneToday){
+    main = `<div class="hk">Heute${s.time?' · '+esc(s.time)+' Uhr':''}${s.deload?' · Entlastung':s.light?' · leicht':''}</div><div class="ht">${esc(s.label)}</div>
+      <div class="hmeta">${s.items.length} Übungen · ca. ${s.est} Min.</div>
+      <div class="chips">${s.parts.map(m=>`<span class="pill">${esc(m)}</span>`).join('')}</div>
+      <button class="primary big" data-action="start" data-day="${s.day}">▶ Einheit starten</button>`;
+  } else if(s){
+    main = `<div class="hk">Heute erledigt</div><div class="ht">Stark gemacht 💪</div><div class="hmeta">${next}</div>`;
+  } else {
+    main = `<div class="hk">Ruhetag</div><div class="ht">Erholen &amp; gut essen 😌</div><div class="hmeta">${next||'Keine Trainingstage geplant.'}</div>`;
+  }
+  // Kennzahlen des Tages
+  const nOn = DAYS.filter(d=>state.schedule[d.k].on).length, ctx = analyze(state.profile, nOn);
+  const tgt = macroTargets(ctx, state.schedule, t), sum = sumEntries(foodDay(t));
+  const ml = (state.water||{})[t] || 0, wg = waterGoal(t), st = weekStreak();
+  const tile = (tab, ring, val, lbl) => `<button class="tile" data-action="go" data-tab="${tab}">${ring}<span class="tv">${val}</span><span class="tl">${lbl}</span></button>`;
+  return `<div class="card hero"><div class="hdate">${esc(dateL)}</div>${main}</div>
+    <div class="tiles">
+      ${tile('essen', miniRing(sum.kcal/tgt.kcal, sum.kcal>tgt.kcal*1.05?'over':''), sum.kcal>tgt.kcal ? '+'+Math.round(sum.kcal-tgt.kcal) : Math.round(tgt.kcal-sum.kcal), sum.kcal>tgt.kcal ? 'kcal drüber' : 'kcal übrig')}
+      ${tile('essen', miniRing(sum.p/tgt.p,'mp'), `${Math.round(sum.p)}<small>/${tgt.p} g</small>`, 'Protein')}
+      ${tile('essen', miniRing(ml/wg,'mw'), `${fmt2(ml/1000)}<small>/${fmt2(wg/1000)} l</small>`, 'Wasser')}
+      ${tile('fortschritt', miniRing(st.planned?st.week/st.planned:0,'ms'), `${st.week}<small>/${st.planned||'–'}</small>`, st.streak?`🔥 ${st.streak} ${st.streak===1?'Woche':'Wochen'} Serie`:'Training')}
+    </div>`;
+}
+function viewPlan(){
+  const plan = getPlan(state);
+  if(!plan){
+    const pOk = profileValid(state.profile);
+    return `<div class="card empty"><h2>Willkommen! 👋</h2>
+      <p class="muted">${pOk?'Wähle mindestens einen Trainingstag aus.':'Gib zuerst deine Körperdaten ein – daraus entsteht dein persönlicher Plan.'}</p>
+      <button class="primary" data-action="go" data-tab="mehr" data-sub="${pOk?'zeiten':'profil'}">${pOk?'Trainingstage wählen':'Profil ausfüllen'}</button></div>`;
+  }
+  if(!state.cycleStart){ state.cycleStart = weekStart(todayStr()); save(); }
+  const c = plan.ctx;
+  const maxV = Math.max(1,...Object.values(plan.volume));
+  const target = [[8,12],[10,16],[12,20]][c.L-1];
+  const hints = c.hints.concat(plan.splitHints);
+  if(plan.consecutive) hints.push(['Aufeinanderfolgende Tage','Nach einem Trainingstag folgt eine leichtere Einheit (weniger Sätze, mehr Wiederholungen, RPE 6–7), damit du dich erholen kannst.']);
+  return `${todayCard(plan)}${backupCard()}${deloadCard()}<h2 class="sect">Wochenplan</h2>
+  ${sessionsHtml(plan, c)}
+  <div class="card">
+    <div class="row wrap" style="gap:6px"><h2 style="margin:0">Übersicht</h2><span class="spacer"></span><span class="pill heavy">${esc(SPLITS[plan.split].n)}</span><span class="pill">${LEVELS[state.profile.level].n} · ${GOALS[c.goal].n}</span></div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><b>${fmt(c.bmi)}</b><span>BMI</span></div>
+      <div class="stat"><b>${Math.round(c.kcal/50)*50}</b><span>kcal / Tag*</span></div>
+      <div class="stat"><b>${c.prot[0]}–${c.prot[1]} g</b><span>Protein / Tag</span></div>
+    </div>
+    ${tip(`*Grobe Schätzung (Grundumsatz ${Math.round(c.bmr)} kcal, Gesamtumsatz ca. ${Math.round(c.tdee/50)*50} kcal${GOALS[c.goal].kcal?`, ${GOALS[c.goal].kcal>0?'+':''}${GOALS[c.goal].kcal} kcal für dein Ziel`:''}). Details unter „Essen“.`, 'Wie wird das berechnet?')}
+    ${hints.map(h=>`<div class="hint"><b>${esc(h[0])}:</b> ${esc(h[1])}</div>`).join('')}
+  </div>
+
   <div class="card">
     <h2>Wochenvolumen</h2>
     <p class="small muted" style="margin:-4px 0 8px">Arbeitssätze pro Muskelgruppe. Richtwert für dein Level: ca. ${target[0]}–${target[1]} Sätze für die großen Gruppen.</p>
     ${MUSCLE_ORDER.map(m=>`<div class="bar"><span>${m}</span><div class="track"><div class="fill" style="width:${plan.volume[m]/maxV*100}%"></div></div><span class="v">${plan.volume[m]}</span></div>`).join('')}
   </div>
   <button style="width:100%" data-action="regen">Neue Übungsauswahl</button>
-  <p class="small muted">RPE = gefühlte Anstrengung (10 = nichts geht mehr). RPE 8 heißt: noch ca. 2 Wiederholungen im Tank.</p>
+  ${tip('RPE = gefühlte Anstrengung (10 = nichts geht mehr). RPE 8 heißt: noch ca. 2 Wiederholungen im Tank.', 'Was bedeutet RPE?')}
   <p class="disclaimer">Dieser Plan ist eine allgemeine Empfehlung und ersetzt keine ärztliche oder trainerische Beratung. Bei Vorerkrankungen, Schmerzen oder längerer Trainingspause vorher ärztlich abklären lassen.</p>`;
 }
 
@@ -1325,6 +1468,7 @@ function startSession(dayKey){
   const plan = getPlan(state); if(!plan) return;
   const s = plan.sessions.find(x=>x.day===dayKey); if(!s) return;
   if(state.active && !confirm('Es läuft bereits eine Einheit. Verwerfen und neu starten?')) { go('log'); return; }
+  ui.fEx = null; ui.fSet = null;
   state.active = {
     id: uid(), date: new Date().toISOString(), day:s.day, label:`${s.dayLong} · ${s.label}`,
     items: s.items.map(it=>{const wh=weightHint(it,plan.ctx);
@@ -1335,13 +1479,57 @@ function startSession(dayKey){
   };
   go('log');
 }
+// ---- Fokus-Modus: eine Übung pro Bildschirm ----
+function kgStep(it){ const t = (EX[it.ex]||{}).t; return t==='db'||t==='db1' ? 2 : t==='time' ? 0 : 2.5; }
+function focusPos(a){
+  let ii = ui.fEx;
+  if(ii==null || ii>=a.items.length){ ii = a.items.findIndex(x=>x.sets.some(s=>!s.done)); if(ii<0) ii = a.items.length-1; ui.fEx = ii; }
+  const it = a.items[ii];
+  let si = ui.fSet!=null && ui.fSet<it.sets.length ? ui.fSet : it.sets.findIndex(s=>!s.done);
+  if(si<0) si = it.sets.length-1;
+  return {ii, si, it, st:it.sets[si]};
+}
+function focusView(a){
+  const {ii, si, it, st} = focusPos(a), n = a.items.length, step = kgStep(it), isTime = (EX[it.ex]||{}).t==='time';
+  const doneN = a.items.reduce((x,i)=>x+i.sets.filter(y=>y.done).length,0), total = a.items.reduce((x,i)=>x+i.sets.length,0);
+  const stepper = (k, val, ph, d, lbl, mode) => `<div class="fstep"><span class="flbl">${lbl}</span><div class="stepper">
+      <button class="sb" data-action="fStep" data-k="${k}" data-d="${-d}" aria-label="${lbl} weniger">−</button>
+      <input inputmode="${mode}" data-log="${ii}:${si}:${k}" value="${esc(val)}" placeholder="${esc(ph)}" aria-label="${lbl}">
+      <button class="sb" data-action="fStep" data-k="${k}" data-d="${d}" aria-label="${lbl} mehr">+</button></div></div>`;
+  return `<div id="focus" class="focus">
+    <div class="fprog" role="progressbar" aria-valuenow="${doneN}" aria-valuemax="${total}"><i style="width:${total?doneN/total*100:0}%"></i></div>
+    <div class="row small muted fmeta"><span>Übung <b>${ii+1}</b> von ${n}</span><span class="spacer"></span><span>${doneN}/${total} Sätze</span></div>
+    <div class="card fcard">
+      <button class="linkbtn fname" data-action="guide" data-ex="${it.ex}">${esc(it.name)} <span class="info">ⓘ</span></button>
+      <div class="small muted">Ziel: ${esc(it.target)} · Pause ${it.rest||90} s</div>
+      <div class="fsets">${it.sets.map((x,k)=>`<button class="fdot${x.done?' done':''}${k===si?' cur':''}" data-action="fSet" data-s="${k}" aria-label="Satz ${k+1}">${x.pr?'🏆':x.done?'✓':k+1}</button>`).join('')}
+        <button class="fdot add" data-action="addset" data-i="${ii}" aria-label="Satz hinzufügen">+</button></div>
+      <div class="fsteps">
+        ${step ? stepper('kg', st.kg, 'ohne', step, 'Gewicht (kg)', 'decimal') : ''}
+        ${stepper('reps', st.reps, it.hi, isTime ? 5 : 1, isTime ? 'Sekunden' : 'Wiederholungen', 'numeric')}
+      </div>
+      <div class="small plates" id="plates-${ii}">${platesHtml(it)}</div>
+      <div class="small plates" id="warm-${ii}">${warmHtml(it, a.items.findIndex(x=>x.main)===ii)}</div>
+      <button class="big fdone${st.done?' is-done':' primary'}" data-action="setdone" data-i="${ii}" data-s="${si}">${st.done ? (st.pr?'🏆 ':'✓ ')+'Satz '+(si+1)+' erledigt · rückgängig' : 'Satz '+(si+1)+' geschafft ✓'}</button>
+      ${noteBox(it.ex)}
+    </div>
+    <div id="ftimer"></div>
+    <div class="row fnav">
+      <button class="big" data-action="fNav" data-d="-1" ${ii===0?'disabled':''} aria-label="Vorherige Übung">‹</button>
+      <span class="small muted" style="flex:1;text-align:center">${ii<n-1 ? 'Nächste: '+esc(a.items[ii+1].name) : 'Letzte Übung'}</span>
+      <button class="big" data-action="fNav" data-d="1" ${ii===n-1?'disabled':''} aria-label="Nächste Übung">›</button></div>
+    <div class="row" style="margin-top:14px"><button class="ghost" data-action="focusMode" data-v="0">☰ Liste</button><span class="spacer"></span><button class="primary" data-action="finish">Einheit abschließen</button></div>
+    ${tip(`<textarea data-sessnote rows="2" placeholder="Wie lief es? Energie, Schlaf, Besonderheiten …">${esc(a.note||'')}</textarea>`, a.note ? 'Notiz: '+esc(a.note.slice(0,40)) : 'Notiz zur Einheit')}
+  </div>`;
+}
 function viewLog(){
   const a = state.active;
   let html = '';
-  if(a){
+  if(a && state.focusMode!==false) html += focusView(a);
+  else if(a){
     const doneN = a.items.reduce((s,i)=>s+i.sets.filter(x=>x.done).length,0), total = a.items.reduce((s,i)=>s+i.sets.length,0);
     html += `<div class="card"><div class="row"><h2 style="margin:0">${esc(a.label)}</h2><span class="spacer"></span><span class="pill">${doneN}/${total} Sätze</span></div>
-      <p class="small muted" style="margin:6px 0 0">Nach jedem abgehakten Satz startet automatisch der Pausen-Timer.</p>
+      <div class="row" style="margin-top:8px"><button class="ghost small" data-action="focusMode" data-v="1">◎ Fokus-Modus</button><span class="spacer"></span><span class="small muted">Pausen-Timer startet automatisch</span></div>
       ${a.items.map((it,ii)=>`<div class="lgex"><button class="linkbtn name" data-action="guide" data-ex="${it.ex}">${esc(it.name)} <span class="info">ⓘ</span></button>
         <div class="small muted">Ziel: ${esc(it.target)} · Pause ${it.rest||90} s</div>
         <div class="setrow small muted"><span>#</span><span style="text-align:center">kg</span><span style="text-align:center">Wdh.</span><span></span></div>
@@ -1420,7 +1608,18 @@ function celebrate(){
 }
 function startTimer(sec, label){ state.timer = {endAt: Date.now()+sec*1000, total:sec, label}; save(); renderTimer(); }
 function renderTimer(){
-  const bar = $('#timerbar'); const t = state.timer;
+  const bar = $('#timerbar'); const t = state.timer, ft = document.getElementById('ftimer');
+  if(ft){                                   // Fokus-Modus: großer Ring statt Leiste
+    bar.hidden = true; document.body.classList.remove('has-timer');
+    if(!t){ ft.innerHTML = ''; return; }
+    const left = Math.max(0, Math.round((t.endAt - Date.now())/1000)), C = 2*Math.PI*52;
+    if(!ft.firstChild) ft.innerHTML = `<div class="card bigtimer"><div class="btring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="rtrack" cx="60" cy="60" r="52"/><circle class="rfill" id="btArc" cx="60" cy="60" r="52" stroke-dasharray="${C}" transform="rotate(-90 60 60)"/></svg>
+      <div class="btxt"><span>Pause</span><b id="btLeft"></b></div></div>
+      <div class="btbtns"><button data-action="tminus">−15 s</button><button class="primary" data-action="tskip">Weiter ✓</button><button data-action="tplus">+15 s</button></div></div>`;
+    $('#btArc').setAttribute('stroke-dashoffset', C*(1-left/t.total));
+    $('#btLeft').textContent = `${Math.floor(left/60)}:${pad2(left%60)}`;
+    return;
+  }
   if(!t){ bar.hidden = true; document.body.classList.remove('has-timer'); return; }
   const left = Math.max(0, Math.round((t.endAt - Date.now())/1000));
   bar.hidden = false; document.body.classList.add('has-timer');
@@ -1443,6 +1642,21 @@ function ringSvg(val, goal, label, unit){
   return `<div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${r}" class="rtrack"/><circle cx="50" cy="50" r="${r}" class="rfill${over?' over':''}" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-Math.min(1,pct))}" transform="rotate(-90 50 50)"/></svg>
     <div class="rtxt"><b>${Math.round(val)}</b><span>von ${Math.round(goal)}${unit}</span></div><div class="rlbl">${label}</div></div>`;
 }
+function macroRing(sum, tgt){
+  const r = 42, C = 2*Math.PI*r, fill = Math.min(1, tgt.kcal ? sum.kcal/tgt.kcal : 0);
+  const mk = sum.p*4 + sum.c*4 + sum.f*9;
+  const parts = mk>0 ? [['mp',sum.p*4],['mc',sum.c*4],['mf',sum.f*9]].map(([k,v])=>[k,v/mk]) : [['mp',1]];
+  let off = 0;
+  const arcs = parts.map(([k,sh])=>{ const len = C*fill*sh, gap = len>4 ? 1.5 : 0;
+    const a = len>0.5 ? `<circle cx="50" cy="50" r="${r}" class="mseg ${k}" stroke-dasharray="${Math.max(0.1,len-gap)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 50 50)"/>` : '';
+    off += len; return a; }).join('');
+  const left = Math.round(tgt.kcal - sum.kcal);
+  const row = (cls, l, v, g) => `<div class="mrow"><div class="row"><i class="dot ${cls}"></i><span>${l}</span><span class="spacer"></span><span class="mnum"><b>${Math.round(v)}</b><span class="muted">/${Math.round(g)} g</span></span>${cls==='mp'&&v>=g?'<span class="okm">✓</span>':''}</div>
+    <div class="mtrack"><i class="${cls}" style="width:${Math.min(100,g?v/g*100:0)}%"></i></div></div>`;
+  return `<div class="mring"><div class="ringbox"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${r}" class="rtrack"/>${arcs}</svg>
+      <div class="rtxt2"><b class="${left<0?'warnc':''}">${Math.abs(left)}</b><span>${left<0?'kcal drüber':'kcal übrig'}</span><em>${Math.round(sum.kcal)} / ${tgt.kcal}</em></div></div>
+    <div class="mleg">${row('mp','Protein',sum.p,tgt.p)}${row('mc','Kohlenhydrate',sum.c,tgt.c)}${row('mf','Fett',sum.f,tgt.f)}</div></div>`;
+}
 function macroBar(lbl, v, g){ return `<div class="bar macro"><span>${lbl}</span><div class="track"><div class="fill${v>g*1.1?' over':''}" style="width:${Math.min(100,g?v/g*100:0)}%"></div></div><span class="v">${Math.round(v)}/${Math.round(g)} g</span></div>`; }
 function viewEssen(){
   if(!profileValid(state.profile)) return `<div class="card empty"><h2>Profil fehlt</h2><p class="muted">Für deinen Kalorienbedarf brauche ich Größe, Gewicht und Alter.</p><button class="primary" data-action="go" data-tab="mehr" data-sub="profil">Profil ausfüllen</button></div>`;
@@ -1461,9 +1675,7 @@ function viewEssen(){
       <button class="ghost" style="flex:1;font-weight:600" data-action="fday" data-d="0">${esc(dLabel)}${tgt.train?' · Trainingstag':''}</button>
       <button class="icon" data-action="fday" data-d="1" aria-label="Nächster Tag" ${isToday?'disabled':''}>›</button></div>
   <div class="card">
-    <div class="rings">${ringSvg(sum.kcal, tgt.kcal, 'Kalorien',' kcal')}${ringSvg(sum.p, tgt.p, 'Protein',' g')}</div>
-    <p class="small muted" style="text-align:center;margin:4px 0 8px">${sum.kcal<=tgt.kcal ? `Noch <b>${Math.round(tgt.kcal-sum.kcal)} kcal</b> übrig` : `<b style="color:var(--warn)">${Math.round(sum.kcal-tgt.kcal)} kcal</b> über dem Ziel`}${sum.p<tgt.p?` · noch ${Math.round(tgt.p-sum.p)} g Protein`:' · <b style="color:var(--ok)">✓ Proteinziel erreicht</b>'}</p>
-    ${macroBar('Kohlenhydrate', sum.c, tgt.c)}${macroBar('Fett', sum.f, tgt.f)}
+    ${macroRing(sum, tgt)}
   </div>
   ${proteinCard(tgt, sum)}
   ${MEALS.map(([k,l])=>{const items=list.filter(e=>e.meal===k), ms=sumEntries(items);return `<div class="card meal">
@@ -1480,7 +1692,7 @@ function viewEssen(){
     <div class="wchart">${week.map(w=>`<div class="wcol"><div class="wbarbox"><div class="wgoal" style="bottom:${w.t.kcal/maxK*100}%"></div><div class="wbar${w.s.kcal>w.t.kcal*1.05?' over':''}" style="height:${w.s.kcal/maxK*100}%"></div></div><span>${DAYS[(parseDay(w.d).getDay()+6)%7].s}</span></div>`).join('')}</div>
     <p class="small muted" style="margin:8px 0 0">${logged.length ? `Ø ${Math.round(avgK)} kcal und ${Math.round(avgP)} g Protein an ${logged.length} erfassten Tagen (Ziel ca. ${Math.round(week.reduce((a,w)=>a+w.t.kcal,0)/7)} kcal). Der Strich zeigt das Tagesziel.` : 'Noch keine Einträge in dieser Woche.'}</p>
   </div>
-  <p class="small muted">Ziele: ${tgt.kcal} kcal · ${tgt.p} g Protein · ${tgt.c} g Kohlenhydrate · ${tgt.f} g Fett${tgt.train?' (Trainingstag, etwas mehr)':''}. Grobe Schätzung – passe sie an deinem Gewichtstrend unter „Fortschritt“ an.</p>`;
+  ${tip(`Ziele: ${tgt.kcal} kcal · ${tgt.p} g Protein · ${tgt.c} g Kohlenhydrate · ${tgt.f} g Fett${tgt.train?' (Trainingstag, etwas mehr)':''}. Grobe Schätzung – passe sie an deinem Gewichtstrend unter „Fortschritt“ an.`, 'Wie entstehen die Ziele?')}`;
 }
 
 // ---- Bottom-Sheet ----
@@ -1810,7 +2022,7 @@ function recordsCard(){
       : `<b>${x.b.bw} Wdh.</b> am Stück (${sd(x.b.bwD)})`}</div></div>`;
   return `<div class="card"><h2>🏆 Rekorde</h2>${rows.slice(0,8).map(row).join('')}
     ${rows.length>8 ? `<details><summary class="small muted" style="cursor:pointer;padding-top:8px">Alle ${rows.length} Übungen anzeigen</summary>${rows.slice(8).map(row).join('')}</details>` : ''}
-    <p class="small muted" style="margin:8px 0 0">Neue Rekorde meldet die App direkt beim Abhaken des Satzes: mehr Gewicht, mehr Wiederholungen oder ein höheres geschätztes Maximum.</p></div>`;
+    ${tip('Neue Rekorde meldet die App direkt beim Abhaken des Satzes: mehr Gewicht, mehr Wiederholungen oder ein höheres geschätztes Maximum.', 'Wie zählen Rekorde?')}</div>`;
 }
 function viewFortschritt(){
   const today = todayStr();
@@ -1828,14 +2040,11 @@ function viewFortschritt(){
   const hist = ui.exSel ? exerciseHistory(state.logs, ui.exSel) : [];
   const hb = hist.length ? hist[0].date : today;
   // Statistik
-  const ws0 = weekStart(today), planned = DAYS.filter(d=>state.schedule[d.k].on).length;
-  const weekCount = s => state.logs.filter(l=>weekStart(l.date.slice(0,10))===s).length;
-  let streak = 0, w = weekCount(ws0)>=planned && planned ? ws0 : addDays(ws0,-7);
-  while(planned && weekCount(w)>=planned){ streak++; w = addDays(w,-7); }
+  const {streak, week:weekN, planned} = weekStreak();
   const totalVol = state.logs.reduce((s,l)=>s+l.items.reduce((t,i)=>t+i.sets.filter(x=>x.done).reduce((u,x)=>u+(num(x.kg)||0)*(num(x.reps)||0),0),0),0);
   return `<div class="card"><h2>Körpergewicht</h2>
     <div class="row"><input id="wIn" inputmode="decimal" placeholder="kg" value="${todayW?esc(String(todayW.kg).replace('.',',')):''}" style="flex:1"><button class="primary" data-action="wSave">${todayW?'Aktualisieren':'Heute eintragen'}</button></div>
-    <p class="small muted" style="margin:6px 0 10px">Am besten morgens nach dem Aufstehen wiegen. Tagesschwankungen sind normal – entscheidend ist die Trendlinie.</p>
+    <div style="margin:6px 0 10px">${tip('Am besten morgens nach dem Aufstehen wiegen. Tagesschwankungen sind normal – entscheidend ist die Trendlinie.', 'Tipp zum Wiegen')}</div>
     ${pts.length ? `<div class="seg small-seg" style="margin-bottom:8px">${[[28,'4 Wochen'],[90,'3 Monate'],[0,'Alles']].map(([k,l])=>`<button data-action="wRange" data-r="${k}" class="${range===k?'on':''}">${l}</button>`).join('')}</div>
       ${lineChart([{pts:pts.map(p=>({x:daysBetween(base,p.date),y:p.kg})),cls:'cl-raw',dots:true},{pts:avg.map(p=>({x:daysBetween(base,p.date),y:p.kg})),cls:'cl-avg'}],{from:sd(pts[0].date),to:sd(pts[pts.length-1].date),label:'Gewichtsverlauf'})}
       <div class="legend small muted"><span><i class="lg-raw"></i>Messwert</span><span><i class="lg-avg"></i>7-Tage-Schnitt</span></div>
@@ -1854,12 +2063,12 @@ function viewFortschritt(){
       <div class="stats"><div class="stat"><b>${fmt(Math.max(...hist.map(h=>h.top)))}</b><span>kg Bestgewicht</span></div>
         <div class="stat"><b>${fmt(Math.max(...hist.map(h=>h.e1rm)))}</b><span>kg geschätztes Max.</span></div>
         <div class="stat"><b>${hist.length}</b><span>Einheiten</span></div></div>
-      <p class="small muted" style="margin:6px 0 0">„Geschätztes Maximum“ = Gewicht, das du ungefähr 1× schaffen würdest (Epley-Formel). Es wird nur berechnet, nicht getestet.</p>` : ''}`
+      ${tip('„Geschätztes Maximum“ = Gewicht, das du ungefähr 1× schaffen würdest (Epley-Formel). Es wird nur berechnet, nicht getestet.', 'Was ist das geschätzte Maximum?')}` : ''}`
       : '<p class="muted small">Sobald du Einheiten mit Gewichten abschließt, siehst du hier deine Kraftentwicklung pro Übung.</p>'}
   </div>
   ${recordsCard()}
   <div class="card"><h2>Statistik</h2>
-    <div class="stats"><div class="stat"><b>${weekCount(ws0)}/${planned||'–'}</b><span>Einheiten diese Woche</span></div>
+    <div class="stats"><div class="stat"><b>${weekN}/${planned||'–'}</b><span>Einheiten diese Woche</span></div>
       <div class="stat"><b>${streak}</b><span>Wochen in Folge ✓</span></div>
       <div class="stat"><b>${state.logs.length}</b><span>Einheiten gesamt</span></div></div>
     <p class="small muted" style="margin:6px 0 0">Insgesamt bewegt: <b>${Math.round(totalVol).toLocaleString('de-DE')} kg</b>${(()=>{ const m=today.slice(0,7), n=state.logs.filter(l=>String(l.date).slice(0,7)===m).reduce((s,l)=>s+(l.prs||[]).length,0); return n?` · 🏆 <b>${n}</b> ${n===1?'Rekord':'Rekorde'} diesen Monat`:''; })()}</p>
@@ -2015,8 +2224,8 @@ function sheetSaveDish(){
     <button class="primary" style="width:100%" data-action="dishSave">Speichern</button>
     <p class="small muted">Danach findest du es unter „+ → Meine“ und trägst es mit einem Tipp ein.</p>`;
 }
-function waterGoal(){
-  const w = num(state.profile.weight) || 75, train = !!(state.schedule[dayKeyOf(ui.foodDate)]||{}).on;
+function waterGoal(d){
+  const w = num(state.profile.weight) || 75, train = !!(state.schedule[dayKeyOf(d||ui.foodDate)]||{}).on;
   return Math.min(4000, Math.max(1500, Math.round((w*35 + (train?500:0))/250)*250));
 }
 function waterCard(){
@@ -2055,12 +2264,9 @@ function proteinCard(tgt, sum){
   const kLeft = Math.round(tgt.kcal - sum.kcal);
   const list = ui.protList = proteinSuggestions(miss, kLeft, [...state.food.favs, ...state.food.recent]);
   if(!list.length) return '';
-  return `<div class="card"><h2 style="font-size:16px">💡 Protein-Hilfe</h2>
-    <p class="small muted" style="margin:-4px 0 6px">Noch <b>${miss} g Protein</b> offen · ${kLeft>0 ? kLeft+' kcal übrig' : 'Kalorienziel schon erreicht'}</p>
-    ${list.map((f,i)=>`<div class="fitem2"><div class="fpick"><span class="fn">${esc(f.name)}${f.own?' <span class="pill heavy">deins</span>':''}</span>
-      <span class="small muted">${f.g?fmt(f.g)+' g · ':''}<b style="color:var(--accent)">+${fmt(f.p)} g Protein</b> · ${Math.round(f.kcal)} kcal</span></div>
-      <button class="icon primary addbtn" data-action="protAdd" data-i="${i}" aria-label="${esc(f.name)} hinzufügen">+</button></div>`).join('')}
-    <p class="small muted" style="margin:8px 0 0">Sortiert nach Eiweiß pro Kalorie. Grundliste: Durchschnittswerte – bei Markenprodukten weichen sie etwas ab.</p></div>`;
+  return `<div class="card pcardwrap"><div class="row"><h2 style="font-size:16px;margin:0">💡 Protein-Hilfe</h2><span class="spacer"></span><span class="small muted">noch <b>${miss} g</b>${kLeft>0?` · ${kLeft} kcal frei`:''}</span></div>
+    <div class="hscroll">${list.map((f,i)=>`<button class="pcard" data-action="protAdd" data-i="${i}" aria-label="${esc(f.name)} hinzufügen">
+      <span class="pp">+${fmt(f.p)} g</span><span class="pn">${esc(f.name)}</span><span class="small muted">${f.g?fmt(f.g)+' g · ':''}${Math.round(f.kcal)} kcal${f.own?' · deins':''}</span><span class="padd">+</span></button>`).join('')}</div></div>`;
 }
 
 // ================= Events =================
@@ -2094,11 +2300,22 @@ document.addEventListener('click', e=>{
     case 'deloadEnd': state.cycleStart = todayStr(); state.deloadUntil = null; break;
     case 'deloadSnooze': state.deloadSnooze = addDays(todayStr(), 7); toast('Erinnerung in einer Woche'); break;
     case 'start': startSession(b.dataset.day); break;
+    case 'focusMode': state.focusMode = b.dataset.v==='1'; ui.fSet = null; window.scrollTo(0,0); break;
+    case 'fNav': { const a=state.active; if(!a) return; const {ii}=focusPos(a); ui.fEx = Math.max(0, Math.min(a.items.length-1, ii+(+b.dataset.d))); ui.fSet = null; window.scrollTo(0,0); break; }
+    case 'fSet': ui.fSet = +b.dataset.s; break;
+    case 'fStep': { const a=state.active; if(!a) return; const {it, st, si}=focusPos(a), k=b.dataset.k, d=+b.dataset.d;
+      if(k==='kg'){ const old = st.kg, v = Math.max(0, Math.round(((num(st.kg)||0)+d)*100)/100); st.kg = v ? String(v) : '';
+        it.sets.forEach((x,j)=>{ if(j>si && !x.done && x.kg===old) x.kg = st.kg; }); }        // folgende Sätze mitziehen
+      else { const base = num(st.reps); st.reps = String(Math.max(0, base>0 ? base + d : it.hi)); }
+      if(st.done) sessionPRs(a);
+      break; }
     case 'setdone': {
       const it = state.active.items[+b.dataset.i], st = it.sets[+b.dataset.s];
       if(!st.done && !st.reps){ st.reps = String(it.hi); }
       st.done = !st.done;
       const hadPR = !!st.pr, pr = sessionPRs(state.active).find(p=>p.set===st);
+      if(state.focusMode!==false){ ui.fSet = null;
+        if(st.done && it.sets.every(x=>x.done)){ const nx = state.active.items.findIndex((x,k)=>k>+b.dataset.i && x.sets.some(y=>!y.done)); if(nx>=0){ ui.fEx = nx; window.scrollTo(0,0); } } }
       if(st.done && pr && !hadPR){ toast(`🏆 ${it.name}: ${pr.txt}`, 4000); celebrate(); ui.lastPR = b.dataset.i+':'+b.dataset.s; setTimeout(()=>{ ui.lastPR = null; }, 800); }
       if(st.done){
         const allDone = state.active.items.every(i=>i.sets.every(s=>s.done));
@@ -2276,6 +2493,25 @@ document.addEventListener('visibilitychange', ()=>{
     if(ui.sheet && ui.sheet.kind==='add' && ui.sheet.mode==='scan' && !ui.scan) startScanner(); }
   else if(ui.scan) stopScanner();   // Kamera aus, wenn die App in den Hintergrund geht
 });
+
+// Bottom-Sheet am oberen Rand nach unten ziehen → schließen
+(function(){
+  const dl = $('#sheet'), body = $('#sheetBody'); let y0 = null, dy = 0;
+  dl.addEventListener('touchstart', e=>{ if(body.scrollTop>2 || e.touches.length>1 || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){ y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; dl.style.transition = 'none'; }, {passive:true});
+  dl.addEventListener('touchmove', e=>{ if(y0==null) return; dy = e.touches[0].clientY - y0;
+    if(dy>0){ if(e.cancelable) e.preventDefault(); dl.style.transform = `translateY(${dy}px)`; } else { y0 = null; dl.style.transform = ''; } }, {passive:false});
+  dl.addEventListener('touchend', ()=>{ if(y0==null) return; y0 = null; dl.style.transition = 'transform .2s ease';
+    if(dy>110){ dl.style.transform = 'translateY(100%)'; setTimeout(()=>{ dl.style.transform=''; dl.style.transition=''; closeSheet(); }, 180); }
+    else dl.style.transform = ''; });
+})();
+// Fokus-Modus: nach links/rechts wischen = nächste/vorige Übung
+(function(){
+  let x0 = null, yy0 = 0;
+  document.addEventListener('touchstart', e=>{ const f = e.target.closest && e.target.closest('#focus');
+    x0 = f && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && !e.target.closest('.hscroll') ? e.touches[0].clientX : null; yy0 = e.touches[0].clientY; }, {passive:true});
+  document.addEventListener('touchend', e=>{ if(x0==null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - yy0; x0 = null;
+    if(Math.abs(dx)>70 && Math.abs(dy)<45){ const btn = $(`[data-action=fNav][data-d="${dx<0?1:-1}"]`); if(btn && !btn.disabled) btn.click(); } }, {passive:true});
+})();
 
 if(!profileValid(state.profile) && state.tab==='plan' && !state.logs.length){ state.tab='mehr'; state.sub='profil'; }
 render();
