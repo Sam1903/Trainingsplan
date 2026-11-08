@@ -107,6 +107,16 @@ ul.plain{margin:4px 0 0;padding-left:18px} ul.plain li{margin:2px 0;font-size:14
 .setrow input{text-align:center;padding:8px}
 .setrow .chk{min-width:52px;padding:0;font-size:20px}
 .setrow .chk.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.setrow .prmark{font-size:18px;text-align:center}
+.setrow .prmark.pop{animation:prpop .5s ease-out}
+.setrow.pr input{border-color:var(--warn)}
+@keyframes prpop{0%{transform:scale(.3)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
+.prrow{border-top:1px solid var(--line);padding:8px 0}
+.prrow .fn{font-weight:600;font-size:15px}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:1000;overflow:hidden}
+.confetti i{position:absolute;top:-24px;width:8px;height:14px;border-radius:2px;animation-name:cfall;animation-timing-function:cubic-bezier(.3,.6,.6,1);animation-fill-mode:forwards}
+@keyframes cfall{to{top:105vh;transform:translateX(40px) rotate(720deg);opacity:.7}}
+@media (prefers-reduced-motion: reduce){.confetti{display:none}.setrow .prmark{animation:none}}
 .lgex{padding:12px 0;border-top:1px solid var(--line)}
 .lgex:first-of-type{border-top:0}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--card);border-top:1px solid var(--line);
@@ -836,6 +846,54 @@ function parseMeal(text){
 
 // ---- Fortschritt ----
 function e1rm(kg, reps){ kg=+kg; reps=+reps; if(!(kg>0)||!(reps>0)) return 0; return reps===1 ? kg : kg*(1+reps/30); }
+// ---- Rekorde ----
+function doneSets(it){ return (it.sets||[]).filter(s=>s.done && num(s.reps)>0); }
+function prAdd(b, kg, r, d){
+  if(kg>0){
+    if(kg>b.top){ b.top = kg; b.topD = d; }
+    const e = e1rm(kg, r); if(e>b.e1){ b.e1 = e; b.e1D = d; b.e1S = [kg, r]; }
+    const k = String(kg); if(r>(b.repsAt[k]||0)) b.repsAt[k] = r;
+  } else if(r>b.bw){ b.bw = r; b.bwD = d; }
+}
+// Bestwerte einer Übung aus abgeschlossenen Einheiten
+function exBests(logs, exId){
+  const b = {n:0, top:0, topD:null, e1:0, e1D:null, e1S:null, repsAt:{}, bw:0, bwD:null};
+  for(const l of logs){ const d = String(l.date||'').slice(0,10);
+    for(const it of l.items){ if(it.ex!==exId) continue; const ss = doneSets(it); if(!ss.length) continue;
+      b.n++; for(const s of ss) prAdd(b, num(s.kg)||0, num(s.reps), d); } }
+  return b;
+}
+// Ist dieser Satz ein Rekord gegenüber den Bestwerten b?
+function setPR(b, kg, reps){
+  kg = num(kg)||0; reps = num(reps);
+  if(!(reps>0) || !b.n) return null;                       // erste Einheit einer Übung: noch kein Rekord
+  if(kg>0){
+    if(!b.top) return null;
+    if(kg>b.top) return {type:'kg', txt:`Neues Höchstgewicht: ${fmt(kg)} kg`};
+    const e = e1rm(kg, reps);
+    if(e>b.e1+0.05) return {type:'e1rm', txt:`${fmt(kg)} kg × ${reps} – neue Bestleistung (≈ ${fmt(e)} kg max.)`};
+    const prev = Math.max(0, ...Object.entries(b.repsAt).filter(([k])=>+k>=kg).map(([,r])=>r));
+    if(prev>0 && reps>prev) return {type:'reps', txt:`${reps} Wdh. mit ${fmt(kg)} kg – so viele wie nie`};
+    return null;
+  }
+  if(b.bw && reps>b.bw) return {type:'bw', txt:`${reps} Wdh. am Stück – neuer Rekord`};
+  return null;
+}
+// Alle Rekorde einer laufenden Einheit neu bestimmen (markiert Sätze mit s.pr)
+function sessionPRs(a){
+  const out = [], cache = {}, d = String(a.date||'').slice(0,10);
+  for(const it of a.items){
+    const b = cache[it.ex] || (cache[it.ex] = exBests(state.logs.filter(l=>l.id!==a.id), it.ex));
+    for(const s of it.sets){
+      delete s.pr;
+      if(!s.done || !(num(s.reps)>0)) continue;
+      const pr = setPR(b, s.kg, s.reps);
+      if(pr){ s.pr = pr.type; out.push({ex:it.ex, name:it.name, txt:pr.txt, set:s}); }
+      prAdd(b, num(s.kg)||0, num(s.reps), d);
+    }
+  }
+  return out;
+}
 function exerciseHistory(logs, exId){
   const out = [];
   for(const l of logs){
@@ -1287,7 +1345,7 @@ function viewLog(){
       ${a.items.map((it,ii)=>`<div class="lgex"><button class="linkbtn name" data-action="guide" data-ex="${it.ex}">${esc(it.name)} <span class="info">ⓘ</span></button>
         <div class="small muted">Ziel: ${esc(it.target)} · Pause ${it.rest||90} s</div>
         <div class="setrow small muted"><span>#</span><span style="text-align:center">kg</span><span style="text-align:center">Wdh.</span><span></span></div>
-        ${it.sets.map((st,si)=>`<div class="setrow"><span class="muted">${si+1}</span>
+        ${it.sets.map((st,si)=>`<div class="setrow${st.pr?' pr':''}">${st.pr?`<span class="prmark${ui.lastPR===ii+':'+si?' pop':''}" title="Rekord" aria-label="Rekord">🏆</span>`:`<span class="muted">${si+1}</span>`}
           <input inputmode="decimal" data-log="${ii}:${si}:kg" value="${esc(st.kg)}" placeholder="kg">
           <input inputmode="numeric" data-log="${ii}:${si}:reps" value="${esc(st.reps)}" placeholder="${it.hi}">
           <button class="chk ${st.done?'done':''}" data-action="setdone" data-i="${ii}" data-s="${si}" aria-label="Satz erledigt">✓</button></div>`).join('')}
@@ -1307,8 +1365,8 @@ function viewLog(){
   html += `<div class="card"><h2>Verlauf</h2>${logs.length ? logs.map(l=>{
     const d = new Date(l.date);
     const vol = l.items.reduce((s,i)=>s+i.sets.filter(x=>x.done).reduce((t,x)=>t+(num(x.kg)||0)*(num(x.reps)||0),0),0);
-    return `<details style="border-top:1px solid var(--line);padding:10px 0"><summary style="cursor:pointer"><b>${d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'})}</b> · ${esc(l.label)}<br><span class="small muted">${l.items.length} Übungen · ${Math.round(vol).toLocaleString('de-DE')} kg bewegt</span></summary>
-      <ul class="plain">${l.items.map(i=>`<li>${esc(i.name)}: ${i.sets.filter(s=>s.done).map(s=>`${esc(s.kg||'–')} kg × ${esc(s.reps||'?')}`).join(', ')||'<span class="muted">nicht erledigt</span>'}</li>`).join('')}</ul>
+    return `<details style="border-top:1px solid var(--line);padding:10px 0"><summary style="cursor:pointer"><b>${d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'2-digit'})}</b> · ${esc(l.label)}<br><span class="small muted">${l.items.length} Übungen · ${Math.round(vol).toLocaleString('de-DE')} kg bewegt${(l.prs||[]).length?` · <b style="color:var(--warn)">🏆 ${l.prs.length===1?'1 Rekord':l.prs.length+' Rekorde'}</b>`:''}</span></summary>
+      <ul class="plain">${l.items.map(i=>`<li>${esc(i.name)}: ${i.sets.filter(s=>s.done).map(s=>`${s.pr?'🏆 ':''}${esc(s.kg||'–')} kg × ${esc(s.reps||'?')}`).join(', ')||'<span class="muted">nicht erledigt</span>'}</li>`).join('')}</ul>
       ${l.note?`<p class="small" style="margin:6px 0 0">📝 ${esc(l.note)}</p>`:''}
       <button class="ghost danger small" data-action="dellog" data-id="${l.id}" style="min-height:36px;margin-top:6px">Eintrag löschen</button></details>`;
   }).join('') : '<p class="muted small">Noch keine abgeschlossenen Einheiten.</p>'}</div>`;
@@ -1317,18 +1375,13 @@ function viewLog(){
 function finishSession(){
   const a = state.active;
   if(!a.items.some(i=>i.sets.some(s=>s.done))){ toast('Noch kein Satz abgehakt'); return false; }
-  const prs = [];
-  for(const it of a.items){
-    const prev = exerciseHistory(state.logs, it.ex);
-    const now = exerciseHistory([a], it.ex)[0];
-    if(now && prev.length){
-      const bestE = Math.max(...prev.map(p=>p.e1rm)), bestTop = Math.max(...prev.map(p=>p.top));
-      if(now.top > bestTop) prs.push(`${it.name}: ${fmt(now.top)} kg`);
-      else if(now.e1rm > bestE) prs.push(`${it.name}: neue Bestleistung (${fmt(now.e1rm)} kg geschätztes Maximum)`);
-    }
-  }
+  // Rekorde neu berechnen (falls kg/Wdh. nach dem Abhaken geändert wurden); pro Übung der letzte = beste
+  const byEx = {};
+  for(const p of sessionPRs(a)) byEx[p.ex] = {ex:p.ex, name:p.name, txt:p.txt};
+  a.prs = Object.values(byEx);
   state.logs.push(a); state.active = null; state.timer = null;
-  toast(prs.length ? '🏆 Neuer Rekord! ' + [...new Set(prs)].join(' · ') : 'Einheit gespeichert 💪', prs.length ? 4000 : 1800);
+  if(a.prs.length){ toast(`🏆 ${a.prs.length===1?'1 Rekord':a.prs.length+' Rekorde'} heute! ` + a.prs.map(p=>`${p.name}: ${p.txt}`).join(' · '), 4500); celebrate(); }
+  else toast('Einheit gespeichert 💪');
   return true;
 }
 
@@ -1344,6 +1397,26 @@ function beep(){
       o.connect(g).connect(audioCtx.destination); o.start(t0+dt); o.stop(t0+dt+.22); });
   }catch(e){}
   try{ navigator.vibrate && navigator.vibrate([200,100,200]); }catch(e){}
+}
+// Rekord feiern: Konfetti (ohne bei „Bewegung reduzieren“), heller Dreiklang, Vibration
+function celebrate(){
+  try{
+    if(!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)){
+      const c = document.createElement('div'); c.className = 'confetti'; c.setAttribute('aria-hidden','true');
+      const cols = ['var(--accent)','var(--warn)','var(--ok)','#e2557a','#4f7cff','#f2c94c'];
+      c.innerHTML = Array.from({length:36},(_,i)=>`<i style="left:${Math.random()*100}%;background:${cols[i%cols.length]};animation-delay:${Math.random()*.35}s;animation-duration:${1.2+Math.random()*.8}s;transform:rotate(${Math.random()*180}deg)"></i>`).join('');
+      document.body.appendChild(c); setTimeout(()=>c.remove(), 2600);
+    }
+  }catch(e){}
+  if(state.sound && audioCtx){
+    try{
+      const t0 = audioCtx.currentTime;
+      [660, 880, 1320].forEach((f,i)=>{ const o=audioCtx.createOscillator(), g=audioCtx.createGain(), dt=i*.12; o.frequency.value=f; o.type='triangle';
+        g.gain.setValueAtTime(.0001,t0+dt); g.gain.exponentialRampToValueAtTime(.35,t0+dt+.02); g.gain.exponentialRampToValueAtTime(.0001,t0+dt+(i===2?.45:.15));
+        o.connect(g).connect(audioCtx.destination); o.start(t0+dt); o.stop(t0+dt+.5); });
+    }catch(e){}
+  }
+  try{ navigator.vibrate && navigator.vibrate([60,40,60,40,120]); }catch(e){}
 }
 function startTimer(sec, label){ state.timer = {endAt: Date.now()+sec*1000, total:sec, label}; save(); renderTimer(); }
 function renderTimer(){
@@ -1720,6 +1793,25 @@ function lineChart(series, opt){
   return `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="${esc(opt.label||'Diagramm')}">${grid}${lines}
     <text x="${pl}" y="${H-6}" class="clab">${esc(opt.from)}</text><text x="${W-pr}" y="${H-6}" class="clab" text-anchor="end">${esc(opt.to)}</text></svg>`;
 }
+// Rekordliste pro Übung (immer aus den Sätzen berechnet – funktioniert auch mit alten Einträgen)
+function recordsCard(){
+  const names = {};
+  for(const l of state.logs) for(const i of l.items) if(doneSets(i).length) names[i.ex] = (EX[i.ex] && EX[i.ex].n) || i.name;
+  const sd = d => d ? parseDay(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '';
+  const rows = Object.keys(names).map(id=>{ const b = exBests(state.logs, id);
+      return {id, b, last:[b.topD, b.e1D, b.bwD].filter(Boolean).sort().pop()}; })
+    .filter(x=>x.b.top || x.b.bw).sort((a,b)=>a.last<b.last ? 1 : a.last>b.last ? -1 : 0);
+  if(!rows.length) return '';
+  const recent = addDays(todayStr(), -7);
+  const fresh = new Set(state.logs.filter(l=>String(l.date).slice(0,10)>=recent).flatMap(l=>(l.prs||[]).map(p=>p.ex)));
+  const row = x => `<div class="prrow"><div class="fn">${esc(names[x.id])}${fresh.has(x.id)?' <span class="tag">neu</span>':''}</div>
+    <div class="small muted">${x.b.top
+      ? `<b>${fmt(x.b.top)} kg</b> Höchstgewicht (${sd(x.b.topD)}) · bester Satz ${fmt(x.b.e1S[0])} kg × ${x.b.e1S[1]} ≈ <b>${fmt(x.b.e1)} kg</b> max. (${sd(x.b.e1D)})`
+      : `<b>${x.b.bw} Wdh.</b> am Stück (${sd(x.b.bwD)})`}</div></div>`;
+  return `<div class="card"><h2>🏆 Rekorde</h2>${rows.slice(0,8).map(row).join('')}
+    ${rows.length>8 ? `<details><summary class="small muted" style="cursor:pointer;padding-top:8px">Alle ${rows.length} Übungen anzeigen</summary>${rows.slice(8).map(row).join('')}</details>` : ''}
+    <p class="small muted" style="margin:8px 0 0">Neue Rekorde meldet die App direkt beim Abhaken des Satzes: mehr Gewicht, mehr Wiederholungen oder ein höheres geschätztes Maximum.</p></div>`;
+}
 function viewFortschritt(){
   const today = todayStr();
   const ws = weightStats(state.weights, today);
@@ -1765,11 +1857,12 @@ function viewFortschritt(){
       <p class="small muted" style="margin:6px 0 0">„Geschätztes Maximum“ = Gewicht, das du ungefähr 1× schaffen würdest (Epley-Formel). Es wird nur berechnet, nicht getestet.</p>` : ''}`
       : '<p class="muted small">Sobald du Einheiten mit Gewichten abschließt, siehst du hier deine Kraftentwicklung pro Übung.</p>'}
   </div>
+  ${recordsCard()}
   <div class="card"><h2>Statistik</h2>
     <div class="stats"><div class="stat"><b>${weekCount(ws0)}/${planned||'–'}</b><span>Einheiten diese Woche</span></div>
       <div class="stat"><b>${streak}</b><span>Wochen in Folge ✓</span></div>
       <div class="stat"><b>${state.logs.length}</b><span>Einheiten gesamt</span></div></div>
-    <p class="small muted" style="margin:6px 0 0">Insgesamt bewegt: <b>${Math.round(totalVol).toLocaleString('de-DE')} kg</b></p>
+    <p class="small muted" style="margin:6px 0 0">Insgesamt bewegt: <b>${Math.round(totalVol).toLocaleString('de-DE')} kg</b>${(()=>{ const m=today.slice(0,7), n=state.logs.filter(l=>String(l.date).slice(0,7)===m).reduce((s,l)=>s+(l.prs||[]).length,0); return n?` · 🏆 <b>${n}</b> ${n===1?'Rekord':'Rekorde'} diesen Monat`:''; })()}</p>
   </div>`;
 }
 
@@ -2005,6 +2098,8 @@ document.addEventListener('click', e=>{
       const it = state.active.items[+b.dataset.i], st = it.sets[+b.dataset.s];
       if(!st.done && !st.reps){ st.reps = String(it.hi); }
       st.done = !st.done;
+      const hadPR = !!st.pr, pr = sessionPRs(state.active).find(p=>p.set===st);
+      if(st.done && pr && !hadPR){ toast(`🏆 ${it.name}: ${pr.txt}`, 4000); celebrate(); ui.lastPR = b.dataset.i+':'+b.dataset.s; setTimeout(()=>{ ui.lastPR = null; }, 800); }
       if(st.done){
         const allDone = state.active.items.every(i=>i.sets.every(s=>s.done));
         if(!allDone) startTimer(it.rest||90, it.name); else state.timer = null;
