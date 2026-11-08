@@ -1,7 +1,7 @@
 // Offline-Cache: bei neuer Version CACHE-Namen erhöhen
-const CACHE = 'trainingsplan-v8';
+const CACHE = 'trainingsplan-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-512.png',
-  './barcode-detector.js', './zxing_reader.wasm', './datenschutz.html'];
+  './barcode-detector.js', './zxing_reader.wasm', './datenschutz.html', './lebensmittel.js'];
 self.addEventListener('install', e => {
   // Einzeln cachen: fehlt eine Datei auf dem Server, funktioniert der Rest trotzdem offline
   e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(FILES.map(f => c.add(f)))).then(() => self.skipWaiting()));

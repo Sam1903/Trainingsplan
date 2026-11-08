@@ -158,6 +158,15 @@ button:disabled{opacity:.45}
 .fpick{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:none;border:0;border-radius:0;padding:8px 0;text-align:left;min-width:0}
 .fpick.full{width:100%;border-top:1px solid var(--line)}
 .fpick .fn{font-size:15px;font-weight:500}
+.tag{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);border:1px solid currentColor;border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:1px}
+textarea.mealtext{min-height:76px;font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.mtlist{margin-top:10px}
+.mtrow{border-top:1px solid var(--line);padding:2px 0 8px}
+.mtrow.miss .fn{color:var(--warn)}
+.mtamt{gap:6px}
+.mtamt input.mg{width:84px;flex:none;min-height:38px;text-align:right}
+.mtalts{margin:4px 0 0 10px;padding-left:10px;border-left:2px solid var(--line)}
+.mtalts .ghost{margin-top:6px}
 .wchart{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;height:130px;align-items:end}
 .wcol{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
 .wcol span{font-size:11px;color:var(--muted)}
@@ -174,6 +183,7 @@ dialog#sheet::backdrop{background:rgba(0,0,0,.45)}
 .sheethead b{flex:1;font-size:17px}
 .small-seg button{font-size:13px;min-height:36px;padding:6px 8px}
 .seg.tabs2{margin:10px 0 12px}
+.seg.tabs2 button{padding-left:6px;padding-right:6px;font-size:14px}
 .sheetcontent{min-height:180px}
 .reader{position:relative;width:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#000}
 .rvid,.rvid video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -238,6 +248,7 @@ ol.plain{margin:4px 0 0;padding-left:20px} ol.plain li{margin:3px 0;font-size:14
 <dialog id="sheet"><div id="sheetBody"></div></dialog>
 <div class="toast" id="toast"></div>
 
+<script src="lebensmittel.js"></script>
 <script>
 /*LOGIC-START*/
 const DAYS = [
@@ -686,6 +697,141 @@ function offToFood(prod){
   const name = [prod.product_name_de || prod.product_name || 'Unbenanntes Produkt', prod.brands ? '('+String(prod.brands).split(',')[0].trim()+')' : ''].join(' ').trim();
   return {name, code:prod.code||'', per100:{kcal:Math.round(kcal), p:+(n.proteins_100g||0), c:+(n.carbohydrates_100g||0), f:+(n.fat_100g||0)},
           serving: +prod.serving_quantity || null};
+}
+
+// ---- Gericht-Erkennung: Freitext → Lebensmittel aus der lokalen Datenbank (lebensmittel.js) ----
+function lmNorm(s){
+  return String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[éèê]/g,'e')
+    .replace(/[^a-z0-9. ]+/g,' ').replace(/\s+/g,' ').trim();
+}
+function lmStem(t){
+  if(t==='eier') return 'ei';
+  return t.length>4 ? t.replace(/(en|er|e|n|s)$/,'') : t;
+}
+const LM_STOP = new Set(['mit','und','von','vom','ein','eine','einen','einem','einer','eines','der','die','das','dem','den','des','etwas','bisschen','wenig','ca','circa','etwa','auf','in','im','aus','dazu','noch','als','zum','zur','plus','oder','frisch','selbstgemacht','selbstgemachte','selbstgemachter','hausgemacht','gross','grosse','grosser','grosses','grossen','klein','kleine','kleiner','kleines','kleinen','normal','normale','normaler','doppelt','doppelte','doppelter','viel','viele','paar']);
+let lmIdx = null;
+function lmIndex(){
+  if(lmIdx) return lmIdx;
+  lmIdx = (window.LM||[]).map(e=>({e, keys:[e.n, ...e.a].map(k=>{ const n=lmNorm(k); return {s:n.split(' ').map(lmStem).join(' '), t:n.split(' ').filter(x=>x && !LM_STOP.has(x)).map(lmStem)}; })}));
+  return lmIdx;
+}
+function lmTokMatch(q, k){ return q===k || (k.length>=4 && q.includes(k)) || (q.length>=4 && k.startsWith(q)); }
+// Punktzahl: wie gut passen die Suchwörter (Q) zu einem Namen/Synonym (K)
+function lmScore(Q, qs, key){
+  if(!Q.length || !key.t.length) return 0;
+  if(qs===key.s) return 100;
+  const K = key.t;
+  const qHit = Q.filter(q=>K.some(k=>lmTokMatch(q,k))).length;
+  const kHit = K.filter(k=>Q.some(q=>lmTokMatch(q,k))).length;
+  if(qHit===Q.length && kHit===K.length) return 90 - Math.abs(Q.join('').length - K.join('').length)/4;
+  if(kHit===K.length) return 60 + K.length*6 - (Q.length-qHit)*8;          // ganzer Name steckt in der Eingabe
+  if(qHit===Q.length) return 50 - (K.length-kHit)*6;                        // Eingabe steckt im Namen
+  return 25*(qHit+kHit)/(Q.length+K.length);
+}
+function lmFind(text, n){
+  const norm = lmNorm(text), qs = norm.split(' ').map(lmStem).join(' ');
+  const Q = norm.split(' ').filter(x=>x && !LM_STOP.has(x) && !/^[0-9.]+$/.test(x)).map(lmStem);
+  if(!Q.length) return [];
+  const res = [];
+  for(const it of lmIndex()){
+    let best = 0; for(const k of it.keys){ const sc = lmScore(Q, qs, k); if(sc>best) best = sc; }
+    if(best>=12) res.push({e:it.e, score: best + (it.keys[0].s===qs ? 1 : 0)});
+  }
+  res.sort((a,b)=>b.score-a.score || a.e.n.length-b.e.n.length);
+  return res.slice(0, n||5);
+}
+function lmFood(e){ return {name:e.n, per100:{kcal:e.k, p:e.p, c:e.c, f:e.f}, units:e.u, serving:e.u.portion||null, local:true}; }
+
+const LM_NUM = {ein:1,eine:1,einen:1,einem:1,einer:1,eins:1,zwei:2,drei:3,vier:4,fuenf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwoelf:12,paar:2,halb:0.5,halbe:0.5,halber:0.5,halbes:0.5,halben:0.5,anderthalb:1.5,eineinhalb:1.5,viertel:0.25,dutzend:12};
+const LM_UNIT = {g:'g',gr:'g',gramm:'g',kg:'kg',kilo:'kg',ml:'ml',l:'l',liter:'l',cl:'cl',
+  el:'el',essloeffel:'el',tl:'tl',teeloeffel:'tl',stueck:'stueck',stk:'stueck',st:'stueck',zehe:'zehe',zehen:'zehe',
+  scheibe:'scheibe',scheiben:'scheibe',glas:'glas',glaeser:'glas',tasse:'tasse',tassen:'tasse',becher:'becher',
+  portion:'portion',portionen:'portion',port:'portion',teller:'teller',schuessel:'schuessel',schale:'schale',schalen:'schale',
+  handvoll:'handvoll',dose:'dose',dosen:'dose',kugel:'kugel',kugeln:'kugel',riegel:'riegel',tafel:'tafel',tafeln:'tafel',
+  flasche:'flasche',flaschen:'flasche',packung:'packung',packungen:'packung',pck:'packung',pack:'packung',tuete:'packung',tueten:'packung',
+  schuss:'schuss',messloeffel:'messloeffel',scoop:'messloeffel',scoops:'messloeffel',roeschen:'roeschen'};
+const LM_UDEF = {el:15, tl:5, glas:200, tasse:150, becher:150, handvoll:30, scheibe:40, dose:400, kugel:50, riegel:40, tafel:100, flasche:500, schuss:20, messloeffel:30, zehe:4, roeschen:20};
+const LM_ULBL = {stueck:'Stück', scheibe:'Scheibe', el:'EL', tl:'TL', glas:'Glas', tasse:'Tasse', becher:'Becher', portion:'Portion', teller:'Teller', schuessel:'Schüssel', schale:'Schale',
+  handvoll:'Handvoll', dose:'Dose', kugel:'Kugel', riegel:'Riegel', tafel:'Tafel', flasche:'Flasche', packung:'Packung', schuss:'Schuss', messloeffel:'Messlöffel', zehe:'Zehe', roeschen:'Röschen', paar:'Paar'};
+// Gramm für Menge + Einheit eines Datenbankeintrags
+function lmBase(u){ return u.portion || u.stueck || u.teller || u.schuessel || u.tasse || u.glas || u.becher || u.riegel || u.scheibe || u.dose || u.kugel || 100; }
+function lmGrams(e, qty, unit, factor, few){
+  const u = (e && e.u) || {}, base = lmBase(u);
+  let g;
+  if(unit==='g' || unit==='ml') g = qty;
+  else if(unit==='kg' || unit==='l') g = qty*1000;
+  else if(unit==='cl') g = qty*10;
+  else if(unit){
+    const alt = {teller:['schuessel','portion'], schuessel:['teller','portion'], schale:['portion','becher'], packung:['portion'], stueck:['portion','scheibe'], portion:['stueck','teller'], zehe:['stueck']}[unit] || [];
+    g = qty * (u[unit] || alt.map(a=>u[a]).find(Boolean) || LM_UDEF[unit] || base);
+  }
+  else if(few) g = u.handvoll || 3*(u.stueck || u.scheibe || base/3);          // "ein paar …"
+  else if(qty!=null) g = qty>=20 ? qty : qty*(u.stueck || u.scheibe || base);
+  else g = base;
+  return Math.max(1, Math.round(g*(factor||1)));
+}
+// Teiltext → {qty, unit, factor, name}
+function lmQty(seg){
+  let s = ' '+String(seg).toLowerCase()+' ';
+  s = s.replace(/\d+(?:[.,]\d+)?\s*%/g,' ')                         // "3,5 %" ist Fettgehalt, keine Menge
+       .replace(/½/g,' 0.5 ').replace(/¼/g,' 0.25 ').replace(/¾/g,' 0.75 ')
+       .replace(/(\d+)\s*\/\s*(\d+)/g,(m,a,b)=>' '+(+a/+b)+' ')
+       .replace(/(\d),(\d)/g,'$1.$2')
+       .replace(/(\d)([a-zäöüß])/g,'$1 $2').replace(/([a-zäöüß])(\d)/g,'$1 $2');
+  const toks = lmNorm(s).split(' ').filter(Boolean);
+  let qty = null, unit = null, factor = 1, few = false, late = null; const name = [];
+  for(let i=0;i<toks.length;i++){
+    const t = toks[i];
+    if(t==='paar'){ few = true; qty = null; continue; }                    // "ein paar Nüsse"
+    if(/^\d+(\.\d+)?$/.test(t) || (t in LM_NUM && (qty==null || t==='halb' || t==='halbe'))){
+      const v = /^\d/.test(t) ? +t : LM_NUM[t];
+      qty = qty!=null && /^halb/.test(t) ? qty*0.5 : (qty!=null && v<1 ? qty+v : v);   // "eine halbe", "1 1/2"
+      continue;
+    }
+    if(LM_UNIT[t] && unit==null){
+      if(qty!=null || !name.length){ unit = LM_UNIT[t]; if(qty==null) qty = 1; few = false; continue; }
+      late = LM_UNIT[t];                                                  // "Spaghetti großer Teller" – evtl. Teil des Namens
+    }
+    if(/^(gross|grosse|grosser|grosses|grossen|riesig|riesige|xl)$/.test(t)){ factor *= 1.4; continue; }
+    if(/^(klein|kleine|kleiner|kleines|kleinen|mini)$/.test(t)){ factor *= 0.7; continue; }
+    if(/^(doppelt|doppelte|doppelter|doppeltes)$/.test(t)){ factor *= 2; continue; }
+    name.push(t);
+  }
+  return {qty, unit, factor, few, late, name: name.join(' ').trim()};
+}
+// Ein Teilstück erkennen
+function lmItem(raw){
+  const q = lmQty(raw);
+  let hits = lmFind(q.name, 6);
+  if(q.late){   // Einheit stand hinter dem Namen: mit und ohne das Wort probieren
+    const nm = q.name.split(' ').filter(t=>LM_UNIT[t]!==q.late).join(' '), h2 = lmFind(nm, 6);
+    if(h2[0] && (!hits[0] || h2[0].score > hits[0].score + 5)){ hits = h2; q.name = nm; q.unit = q.late; if(q.qty==null) q.qty = 1; }
+  }
+  const top = hits[0];
+  const ok = top && top.score >= 45;
+  const e = ok ? top.e : null;
+  return {id:uid(), raw:String(raw).trim(), q, food: e ? lmFood(e) : null, g: lmGrams(e, q.qty, q.unit, q.factor, q.few),
+          alts: hits.filter(h=>ok ? (h!==top && h.score>=45) : true).slice(0,5).map(h=>lmFood(h.e)), score: top ? top.score : 0};
+}
+// Ganze Mahlzeit: "2 Eier, 1 Scheibe Vollkornbrot mit Butter, Kaffee mit Milch"
+function parseMeal(text){
+  const out = [];
+  const segs = String(text||'').replace(/(\d),(\d)/g,'$1.$2').split(/[\n,;+&]|\s+und\s+|\s+sowie\s+|\s+dazu\s+/i).map(s=>s.trim()).filter(Boolean);
+  for(const seg of segs){
+    const whole = lmItem(seg);
+    const parts = seg.split(/\s+mit\s+/i);
+    if(parts.length>1 && whole.score < 95){
+      const sub = parts.map(lmItem);
+      // Aufteilen, wenn alle Teile erkannt werden (oder das Ganze gar nicht)
+      if(sub.every(x=>x.food) || (!whole.food && sub.some(x=>x.food))){
+        // Zutaten ohne Mengenangabe nach "mit": Standardportion, bei Milch & Co. nur ein Schuss
+        sub.forEach((x,i)=>{ if(i>0 && x.q.qty==null && !x.q.few && x.food){ const u=x.food.units||{}; x.g = Math.round((u.schuss || lmBase(u)) * x.q.factor); } });
+        out.push(...sub); continue;
+      }
+    }
+    out.push(whole);
+  }
+  return out;
 }
 
 // ---- Fortschritt ----
@@ -1276,7 +1422,7 @@ function renderSheet(){
 function mealSeg(cur){ return `<div class="seg small-seg">${MEALS.map(([k,l])=>`<button data-action="setMeal" data-meal="${k}" class="${cur===k?'on':''}">${l.replace('essen','')}</button>`).join('')}</div>`; }
 function sheetAdd(){
   const s = ui.sheet, m = s.mode || 'mine';
-  const modes = [['mine','Meine'],['search','Suchen'],['scan','Scannen'],['quick','Schnell']];
+  const modes = [['mine','Meine'],['text','Gericht'],['search','Suchen'],['scan','Scannen'],['quick','Schnell']];
   let body = '';
   if(m==='mine'){
     const favs = state.food.favs, rec = state.food.recent.filter(r=>!favs.some(f=>f.name===r.name));
@@ -1284,10 +1430,14 @@ function sheetAdd(){
       <button class="icon ghost" data-action="${isFav?'unfav':'favRec'}" data-id="${f.id}" aria-label="${isFav?'Aus Favoriten entfernen':'Als Favorit speichern'}">${isFav?'★':'☆'}</button></div>`;
     body = (favs.length||rec.length) ? `${favs.length?`<h3>Favoriten</h3>${favs.map(f=>row(f,true)).join('')}`:''}${rec.length?`<h3>Zuletzt verwendet</h3>${rec.slice(0,15).map(f=>row(f,false)).join('')}`:''}`
       : `<p class="muted small">Hier erscheinen deine Favoriten und zuletzt eingetragenen Lebensmittel. Tippe auf ☆, um etwas als Favorit zu speichern – dann reicht künftig ein Tipp.</p>`;
+  } else if(m==='text'){
+    body = `<textarea id="mealText" class="mealtext" rows="3" placeholder="z. B. 2 Rühreier, 1 Scheibe Vollkornbrot mit Butter, Kaffee mit Milch&#10;oder: Spaghetti Bolognese großer Teller">${esc(s.text||'')}</textarea>
+      <button class="primary" style="width:100%;margin-top:8px" data-action="mtParse">Erkennen</button>
+      <div id="mtBox">${mealTextHtml()}</div>`;
   } else if(m==='search'){
     body = `<div class="row"><input id="fq" type="search" placeholder="z. B. Haferflocken, Skyr …" value="${esc(ui.searchQ)}" enterkeyhint="search"><button class="primary" data-action="doSearch">Suchen</button></div>
       <div id="fres">${searchResultsHtml()}</div>
-      <p class="small muted" style="margin-top:8px">Daten von Open Food Facts (offene Datenbank). Es wird nur der Suchbegriff übertragen.</p>`;
+      <p class="small muted" style="margin-top:8px">Grundnahrungsmittel und Gerichte kommen aus der eingebauten Liste (auch offline), Markenprodukte von Open Food Facts. Es wird nur der Suchbegriff übertragen.</p>`;
   } else if(m==='scan'){
     body = `<div id="reader" class="reader"><div class="rvid"></div><div class="rframe"><i class="rline"></i></div>
         <div class="rctl"><button class="icon" id="zoomBtn" data-action="scanZoom" hidden aria-label="Zoom umschalten">2×</button><button class="icon" id="torchBtn" data-action="scanTorch" hidden aria-label="Taschenlampe">🔦</button></div></div>
@@ -1309,26 +1459,63 @@ function sheetAdd(){
     <div class="seg tabs2">${modes.map(([k,l])=>`<button data-action="addMode" data-mode="${k}" class="${m===k?'on':''}">${l}</button>`).join('')}</div>
     <div class="sheetcontent">${body}</div>`;
 }
+function foodRow(r, action, i, extra){
+  return `<button class="fpick full" data-action="${action}" data-i="${i}"${extra||''}><span class="fn">${esc(r.name)}${r.local?' <span class="tag">Liste</span>':''}</span><span class="small muted">${r.per100.kcal} kcal · ${fmt(r.per100.p)} g P pro 100 g${r.serving?` · Portion ${fmt(r.serving)} g`:''}</span></button>`;
+}
 function searchResultsHtml(){
-  if(ui.searchState==='loading') return '<p class="muted small">Suche läuft …</p>';
-  if(ui.searchState==='error') return `<p class="small" style="color:var(--danger)">${esc(ui.searchErr)}</p>`;
-  if(ui.searchState==='done' && !ui.search.length) return '<p class="muted small">Nichts gefunden. Versuche einen anderen Begriff oder trage die Werte unter „Schnell“ ein.</p>';
-  return ui.search.map((r,i)=>`<button class="fpick full" data-action="pickSearch" data-i="${i}"><span class="fn">${esc(r.name)}</span><span class="small muted">${r.per100.kcal} kcal · ${fmt(r.per100.p)} g P pro 100 g</span></button>`).join('');
+  const loc = ui.searchLocal||[];
+  let h = loc.map((r,i)=>foodRow(r,'pickLocal',i)).join('');
+  if(ui.searchState==='loading') h += '<p class="muted small">Suche bei Open Food Facts läuft …</p>';
+  else if(ui.searchState==='error') h += `<p class="small" style="color:var(--danger)">${esc(ui.searchErr)}</p>`;
+  else if(ui.searchState==='done' && !ui.search.length && !loc.length) h += '<p class="muted small">Nichts gefunden. Versuche einen anderen Begriff oder trage die Werte unter „Schnell“ ein.</p>';
+  if(ui.search.length) h += (loc.length?'<h3>Markenprodukte (Open Food Facts)</h3>':'') + ui.search.map((r,i)=>foodRow(r,'pickSearch',i)).join('');
+  return h;
+}
+// Open Food Facts durchsuchen → Liste im einheitlichen Format
+async function offSearch(q){
+  const url = 'https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&json=1&page_size=25&lc=de&cc=de&fields=code,product_name,product_name_de,brands,nutriments,serving_quantity&search_terms='+encodeURIComponent(q);
+  const r = await fetch(url); if(!r.ok) throw new Error('HTTP '+r.status);
+  const j = await r.json();
+  return (j.products||[]).map(offToFood).filter(Boolean);
 }
 async function doSearch(){
   const q = ($('#fq')||{}).value||''; ui.searchQ = q.trim();
   if(ui.searchQ.length<2) return;
-  if(!navigator.onLine){ ui.searchState='error'; ui.searchErr='Keine Internetverbindung. Lebensmittelsuche geht nur online – nutze sonst „Meine“ oder „Schnell“.'; $('#fres').innerHTML=searchResultsHtml(); return; }
+  ui.searchLocal = lmFind(ui.searchQ, 8).filter(h=>h.score>=30).map(h=>lmFood(h.e)); ui.search = [];
+  if(!navigator.onLine){ ui.searchState='error'; ui.searchErr='Offline – Markenprodukte gibt es nur mit Internet. Die Treffer oben kommen aus der eingebauten Liste.'; $('#fres').innerHTML=searchResultsHtml(); return; }
   ui.searchState='loading'; $('#fres').innerHTML=searchResultsHtml();
-  try{
-    const url = 'https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&json=1&page_size=25&lc=de&cc=de&fields=code,product_name,product_name_de,brands,nutriments,serving_quantity&search_terms='+encodeURIComponent(ui.searchQ);
-    const r = await fetch(url); if(!r.ok) throw new Error('HTTP '+r.status);
-    const j = await r.json();
-    ui.search = (j.products||[]).map(offToFood).filter(Boolean);
-    ui.searchState='done';
-  }catch(e){ ui.searchState='error'; ui.searchErr='Die Suche hat nicht geklappt (Server nicht erreichbar oder zu viele Anfragen). Bitte gleich nochmal versuchen.'; }
+  try{ ui.search = await offSearch(ui.searchQ); ui.searchState='done'; }
+  catch(e){ ui.searchState='error'; ui.searchErr='Open Food Facts ist gerade nicht erreichbar (oder zu viele Anfragen). Bitte gleich nochmal versuchen.'; }
   const el=$('#fres'); if(el) el.innerHTML=searchResultsHtml();
 }
+// ---- Modus „Gericht“: Freitext erkennen, prüfen, alles auf einmal eintragen ----
+function mtSum(){ const s = sumEntries((ui.sheet.items||[]).filter(x=>x.food).map(x=>scaleFood(x.food.per100, x.g))); s.kcal = Math.round(s.kcal); return s; }
+function mtRow(x, i){
+  const v = x.food ? scaleFood(x.food.per100, x.g) : null, open = ui.sheet.altOpen===i;
+  const alts = open ? `<div class="mtalts">${x.alts.map((a,j)=>foodRow(a,'mtPick',i,` data-j="${j}"`)).join('')}
+      ${x.online==='loading'?'<p class="small muted">Suche online …</p>':x.online==='error'?'<p class="small" style="color:var(--danger)">Online-Suche nicht möglich.</p>':''}
+      ${x.online?'':`<button class="ghost small" data-action="mtOnline" data-i="${i}">🔎 Bei Open Food Facts suchen</button>`}</div>` : '';
+  return `<div class="mtrow${x.food?'':' miss'}">
+    <div class="row" style="gap:6px"><button class="fpick" data-action="mtAlt" data-i="${i}">
+        <span class="fn">${x.food ? esc(x.food.name) : `„${esc(x.q.name||x.raw)}“ nicht erkannt`}</span>
+        <span class="small muted">${x.food ? `aus „${esc(x.raw)}“ · antippen zum Ändern` : 'Antippen für Vorschläge oder Online-Suche'}</span></button>
+      <button class="icon ghost" data-action="mtDel" data-i="${i}" aria-label="Zeile entfernen">✕</button></div>
+    ${x.food ? `<div class="row mtamt"><input class="mg" data-mi="${i}" inputmode="decimal" value="${esc(x.g)}" aria-label="Menge in Gramm"><span class="small muted">g</span><span class="spacer"></span><span class="small" id="mk${i}">${mtKcal(v)}</span></div>` : ''}
+    ${alts}</div>`;
+}
+function mtKcal(v){ return `<b>${v.kcal} kcal</b> · ${fmt(v.p)} g P`; }
+function mealTextHtml(){
+  const s = ui.sheet, items = s.items;
+  if(!items) return `<p class="small muted" style="margin-top:10px">Schreib auf, was du gegessen hast – mehrere Sachen mit Komma oder „und“ trennen. Mengen wie „200 g“, „2 Stück“, „1 Scheibe“, „3 EL“, „großer Teller“ werden erkannt; ohne Angabe nehme ich eine übliche Portion. Funktioniert offline und kostenlos.</p>`;
+  if(!items.length) return '<p class="small muted" style="margin-top:10px">Nichts erkannt.</p>';
+  const ok = items.filter(x=>x.food).length;
+  return `<div class="mtlist">${items.map(mtRow).join('')}</div>
+    <div class="stats" id="mtSum" style="margin-top:10px">${amtStats(mtSum())}</div>
+    <label class="f"><span>Als Gericht unter „Meine“ speichern (optional)</span><input id="mtName" placeholder="Name, z. B. Mein Frühstück" value="${esc(s.dishName||'')}"></label>
+    <button class="primary" style="width:100%" data-action="mtAddAll" ${ok?'':'disabled'}>${ok===1?'Hinzufügen':`Alle ${ok} hinzufügen`}</button>
+    <p class="small muted" style="margin-top:8px">Richtwerte aus der eingebauten Liste – bei Markenprodukten lieber scannen.</p>`;
+}
+function mtRefresh(){ const b=$('#mtBox'); if(b) b.innerHTML = mealTextHtml(); }
 async function lookupBarcode(code){
   const info = $('#scanInfo'); if(info) info.textContent = 'Barcode '+code+' erkannt – suche Produkt …';
   if(!navigator.onLine){ toast('Offline – Produktdaten gibt es nur mit Internet'); openSheet('add', {mode:'quick', quick:{code}}); return; }
@@ -1474,7 +1661,8 @@ function sheetAmount(){
   return `<div class="sheethead"><b>${esc(f.name)}</b><button class="icon ghost" data-action="closeSheet" aria-label="Schließen">✕</button></div>
     ${mealSeg(ui.addMeal)}
     <label class="f" style="margin-top:12px"><span>Menge in Gramm</span><input id="amt" inputmode="decimal" value="${esc(g)}"></label>
-    <div class="row wrap" style="gap:6px;margin:-4px 0 12px">${[50,100,150,200,250].map(x=>`<button class="small" data-action="amtSet" data-g="${x}" style="min-height:36px;padding:4px 10px">${x} g</button>`).join('')}${f.serving?`<button class="small" data-action="amtSet" data-g="${f.serving}" style="min-height:36px;padding:4px 10px">1 Portion (${fmt(f.serving)} g)</button>`:''}</div>
+    <div class="row wrap" style="gap:6px;margin:-4px 0 12px">${[50,100,150,200,250].map(x=>`<button class="small" data-action="amtSet" data-g="${x}" style="min-height:36px;padding:4px 10px">${x} g</button>`).join('')}${f.units ? Object.entries(f.units).filter(([k])=>LM_ULBL[k]).slice(0,4).map(([k,gv])=>`<button class="small" data-action="amtSet" data-g="${gv}" style="min-height:36px;padding:4px 10px">1 ${LM_ULBL[k]} (${fmt(gv)} g)</button>`).join('')
+      : f.serving?`<button class="small" data-action="amtSet" data-g="${f.serving}" style="min-height:36px;padding:4px 10px">1 Portion (${fmt(f.serving)} g)</button>`:''}</div>
     <div class="stats" id="amtStats">${amtStats(v)}</div>
     <p class="small muted">Pro 100 g: ${f.per100.kcal} kcal · ${fmt(f.per100.p)} g Protein · ${fmt(f.per100.c)} g KH · ${fmt(f.per100.f)} g Fett</p>
     <label class="row small" style="gap:8px;margin-bottom:10px"><input type="checkbox" id="afav" style="width:22px;min-height:22px;flex:none;-webkit-appearance:checkbox;appearance:auto" ${s.fav?'checked':''}> Als Favorit speichern</label>
@@ -1841,6 +2029,31 @@ document.addEventListener('click', e=>{
     case 'scanZoom': scanToggle('zoom'); return;
     case 'eanLookup': { const c=(($('#ean')||{}).value||'').replace(/\D/g,''); if(c.length<8){ toast('Bitte die 8- oder 13-stellige Nummer unter dem Barcode eingeben'); return; } stopScanner().then(()=>lookupBarcode(c)); return; }
     case 'pickSearch': openSheet('amount', {food:ui.search[+b.dataset.i], g:ui.search[+b.dataset.i].serving||100}); return;
+    case 'pickLocal': { const f=(ui.searchLocal||[])[+b.dataset.i]; if(f) openSheet('amount', {food:f, g:lmBase(f.units||{})}); return; }
+    case 'mtParse': { if(!S) return; S.text = ($('#mealText')||{}).value||''; if(!S.text.trim()){ toast('Bitte erst eintippen, was du gegessen hast'); return; }
+      S.items = parseMeal(S.text); S.altOpen = null; mtRefresh();
+      const miss = S.items.filter(x=>!x.food).length; if(miss) toast(miss===1?'1 Teil nicht erkannt – antippen für Vorschläge':miss+' Teile nicht erkannt – antippen für Vorschläge', 2500);
+      return; }
+    case 'mtDel': { if(!S||!S.items) return; S.items.splice(+b.dataset.i,1); S.altOpen=null; mtRefresh(); return; }
+    case 'mtAlt': { if(!S) return; const i=+b.dataset.i; S.altOpen = S.altOpen===i ? null : i; mtRefresh(); return; }
+    case 'mtPick': { const x=S&&S.items[+b.dataset.i], j=+b.dataset.j, a=x&&x.alts[j]; if(!a) return;
+      if(x.food) x.alts[j] = x.food; else x.alts.splice(j,1);
+      x.food = a;
+      if(!['g','ml','kg','l','cl'].includes(x.q.unit)) x.g = a.units ? lmGrams({u:a.units}, x.q.qty, x.q.unit, x.q.factor, x.q.few) : (a.serving || x.g || 100);
+      S.altOpen = null; mtRefresh(); return; }
+    case 'mtOnline': { const x=S&&S.items[+b.dataset.i]; if(!x) return;
+      if(!navigator.onLine){ toast('Offline – Online-Suche geht gerade nicht'); return; }
+      x.online='loading'; mtRefresh();
+      offSearch(x.q.name||x.raw).then(r=>{ x.alts = [...x.alts, ...r.slice(0,10)]; x.online = r.length ? 'done' : 'error'; if(!r.length) toast('Online nichts gefunden'); })
+        .catch(()=>{ x.online='error'; }).then(()=>{ if(ui.sheet===S) mtRefresh(); });
+      return; }
+    case 'mtAddAll': { if(!S||!S.items) return; const ok=S.items.filter(x=>x.food && x.g>0); if(!ok.length) return;
+      const dn = (($('#mtName')||{}).value||'').trim();
+      ok.forEach(x=>addEntry({name:x.food.name, per100:x.food.per100, g:x.g, code:x.food.code||'', ...scaleFood(x.food.per100, x.g)}));
+      if(dn){ const sm=sumEntries(ok.map(x=>scaleFood(x.food.per100, x.g)));
+        state.food.favs = state.food.favs.filter(f=>f.name!==dn);
+        state.food.favs.push({id:uid(), name:dn, per100:null, g:null, kcal:Math.round(sm.kcal), p:Math.round(sm.p*10)/10, c:Math.round(sm.c*10)/10, f:Math.round(sm.f*10)/10, dish:true}); }
+      closeSheet(); toast(ok.length===1 ? ok[0].food.name.slice(0,30)+' hinzugefügt' : ok.length+' Einträge hinzugefügt'+(dn?' · Gericht gespeichert':'')); break; }
     case 'amtSet': { const inp=$('#amt'); inp.value=b.dataset.g; inp.dispatchEvent(new Event('input',{bubbles:true})); return; }
     case 'amountSave': {
       const g = num($('#amt').value); if(!(g>0)){ toast('Bitte Menge eingeben'); return; }
@@ -1944,6 +2157,14 @@ document.addEventListener('input', e=>{
     if(per) $('#amtStats').innerHTML = amtStats(scaleFood(per, g));
   }
   else if(t.id==='libQ'){ ui.libQ = t.value; $('#libList').innerHTML = libList(); }
+  else if(t.id==='mealText' && ui.sheet){ ui.sheet.text = t.value; }
+  else if(t.id==='mtName' && ui.sheet){ ui.sheet.dishName = t.value; }
+  else if(t.classList.contains('mg') && ui.sheet && ui.sheet.items){
+    const x = ui.sheet.items[+t.dataset.mi]; if(!x || !x.food) return;
+    x.g = Math.max(0, num(t.value)||0);
+    const k = $('#mk'+t.dataset.mi); if(k) k.innerHTML = mtKcal(scaleFood(x.food.per100, x.g));
+    const sm = $('#mtSum'); if(sm) sm.innerHTML = amtStats(mtSum());
+  }
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='fq'){ e.preventDefault(); doSearch(); } if(e.key==='Enter' && e.target.id==='ean'){ e.preventDefault(); $('[data-action=eanLookup]').click(); } });
 document.addEventListener('change', e=>{
